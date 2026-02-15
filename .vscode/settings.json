@@ -1,0 +1,16 @@
+{
+    "python.analysis.extraPaths": [
+        "${workspaceFolder}/install/nav2_common/lib/python3.12/site-packages",
+        "${workspaceFolder}/install/nav2_msgs/lib/python3.12/site-packages",
+        "${workspaceFolder}/install/dwb_msgs/lib/python3.12/site-packages",
+        "${workspaceFolder}/install/nav_2d_msgs/lib/python3.12/site-packages",
+        "/opt/ros/jazzy/lib/python3.12/site-packages"
+    ],
+    "python.defaultInterpreterPath": "/usr/bin/python3",
+    "python.linting.enabled": false,
+    "python.linting.pylintEnabled": false,
+    "[python]": {
+        "editor.defaultFormatter": "ms-python.python",
+        "editor.formatOnSave": true
+    }
+}
