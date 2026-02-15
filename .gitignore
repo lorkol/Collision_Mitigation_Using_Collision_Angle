@@ -7,9 +7,6 @@ log/
 __pycache__/
 *.pyc
 
-# IDE settings
-.vscode/
-.idea/
 
 # Docker/System
 .DS_Store
