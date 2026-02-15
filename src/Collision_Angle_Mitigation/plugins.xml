@@ -1,0 +1,5 @@
+<library path="collision_angle_critic">
+  <class name="mppi::critics::CollisionAngleCritic" type="mppi::critics::CollisionAngleCritic" base_class_type="mppi::critics::CriticFunction">
+    <description>Collision Angle Mitigation Critic</description>
+  </class>
+</library>
