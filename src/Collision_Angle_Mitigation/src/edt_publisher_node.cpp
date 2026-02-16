@@ -50,6 +50,8 @@ private:
       return;
     }
 
+    RCLCPP_DEBUG(this->get_logger(), "New costmap received, recalculating EDT.");
+
     // 1. Create a binary map from the raw costmap data for OpenCV
     // Re-use cv::Mat to avoid reallocation if size is the same
     if (binary_map_.size().width != static_cast<int>(width) ||
