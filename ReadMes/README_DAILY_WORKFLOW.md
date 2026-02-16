@@ -61,7 +61,11 @@ Then in the container run
 source /opt/ros/jazzy/setup.bash
 source ~/ros2_ws/install/setup.bash
 ``` 
-
+# While working on EDT:
+keep building using:
+```bash
+colcon build --packages-select Collision_Angle_Mitigation --parallel-workers 2
+```
 
 # Misc
 Make sure when opening and connecting to VSCode to download the c/c++ and IntelliJ extensions

@@ -1,5 +1,4 @@
 #include "rclcpp/rclcpp.hpp"
-#include "nav2_msgs/msg/costmap.hpp"
 #include "rcl_interfaces/msg/set_parameters_result.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "opencv2/opencv.hpp"
@@ -12,10 +11,9 @@ public:
   {
     // Parameters
     const auto costmap_topic = this->declare_parameter<std::string>(
-      "costmap_topic", "/global_costmap/costmap_raw");
+      "costmap_topic", "/local_costmap/costmap");
     const auto edt_map_topic = this->declare_parameter<std::string>("edt_map_topic", "/edt_map");
-    obstacle_threshold_ = this->declare_parameter<int>(
-      "obstacle_threshold", nav2_costmap_2d::LETHAL_OBSTACLE);
+    obstacle_threshold_ = this->declare_parameter<int>("obstacle_threshold", 100);
 
     param_callback_handle_ = this->add_on_set_parameters_callback(
       std::bind(&EdtPublisherNode::parametersCallback, this, std::placeholders::_1));
@@ -24,7 +22,7 @@ public:
     auto map_qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable();
 
     // Subscriber to the raw costmap.
-    costmap_sub_ = this->create_subscription<nav2_msgs::msg::Costmap>(
+    costmap_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
       costmap_topic,
       map_qos,
       std::bind(&EdtPublisherNode::costmapCallback, this, std::placeholders::_1));
@@ -33,17 +31,17 @@ public:
     edt_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(edt_map_topic, map_qos);
 
     RCLCPP_INFO(this->get_logger(), "EDT Publisher Node has been started.");
-    RCLCPP_INFO(this->get_logger(), "Subscribing to raw costmap on topic: %s", costmap_topic.c_str());
+    RCLCPP_INFO(this->get_logger(), "Subscribing to costmap on topic: %s", costmap_topic.c_str());
     RCLCPP_INFO(this->get_logger(), "Publishing EDT on topic: %s", edt_map_topic.c_str());
   }
 
 private:
-  void costmapCallback(const nav2_msgs::msg::Costmap::ConstSharedPtr msg)
+  void costmapCallback(const nav_msgs::msg::OccupancyGrid::ConstSharedPtr msg)
   {
-    RCLCPP_DEBUG(this->get_logger(), "Received raw costmap");
+    RCLCPP_DEBUG(this->get_logger(), "Received costmap");
 
-    const unsigned int width = msg->metadata.size_x;
-    const unsigned int height = msg->metadata.size_y;
+    const unsigned int width = msg->info.width;
+    const unsigned int height = msg->info.height;
 
     if (width == 0 || height == 0) {
       RCLCPP_WARN(this->get_logger(), "Received an empty costmap.");
@@ -60,16 +58,12 @@ private:
       binary_map_ = cv::Mat(height, width, CV_8UC1);
     }
 
-    for (unsigned int r = 0; r < height; ++r) {
-      for (unsigned int c = 0; c < width; ++c) {
-        const unsigned char cost = msg->data[r * width + c];
-        if (cost >= obstacle_threshold_) {
-          binary_map_.at<unsigned char>(r, c) = 0;   // Obstacle for distanceTransform
-        } else {
-          binary_map_.at<unsigned char>(r, c) = 255; // Free space
-        }
-      }
-    }
+    // Create a cv::Mat header for the incoming costmap data without copying.
+    cv::Mat costmap_mat(height, width, CV_8SC1, const_cast<int8_t *>(msg->data.data()));
+
+    // Use OpenCV's 'compare' to create a binary map, which supports signed types.
+    // Cells with cost < threshold become 255 (free), and others become 0 (obstacle).
+    cv::compare(costmap_mat, obstacle_threshold_, binary_map_, cv::CMP_LT);
 
     // 2. Compute the Exact Distance Transform (EDT)
     // Fills edt_map_ with the distance to the nearest obstacle in pixels
@@ -80,10 +74,10 @@ private:
 
     edt_msg->header = msg->header;
     edt_msg->info.map_load_time = this->now();
-    edt_msg->info.resolution = msg->metadata.resolution;
+    edt_msg->info.resolution = msg->info.resolution;
     edt_msg->info.width = width;
     edt_msg->info.height = height;
-    edt_msg->info.origin = msg->metadata.origin;
+    edt_msg->info.origin = msg->info.origin;
 
     edt_msg->data.resize(width * height);
 
@@ -96,7 +90,7 @@ private:
     }
 
     edt_pub_->publish(std::move(edt_msg));
-    RCLCPP_DEBUG(this->get_logger(), "Published EDT map.");
+    // RCLCPP_INFO(this->get_logger(), "Published EDT map.");
   }
 
   rcl_interfaces::msg::SetParametersResult parametersCallback(
@@ -114,7 +108,7 @@ private:
     return result;
   }
 
-  rclcpp::Subscription<nav2_msgs::msg::Costmap>::SharedPtr costmap_sub_;
+  rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_sub_;
   rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr edt_pub_;
   int obstacle_threshold_;
   OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
