@@ -85,11 +85,11 @@ private:
 
     edt_msg->data.resize(width * height);
 
-    // 4. Fill the OccupancyGrid data with EDT values (distance in cells, capped at 500).
+    // 4. Fill the OccupancyGrid data with EDT values (distance in cells, capped at 100).
     for (unsigned int j = 0; j < height; ++j) {
       for (unsigned int i = 0; i < width; ++i) {
         const float dist_in_pixels = edt_map_.at<float>(j, i);
-        edt_msg->data[j * width + i] = static_cast<int8_t>(std::min(127.0f, dist_in_pixels));
+        edt_msg->data[j * width + i] = static_cast<int8_t>(std::min(100.0f, dist_in_pixels));
       }
     }
 

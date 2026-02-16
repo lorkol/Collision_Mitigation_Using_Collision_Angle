@@ -16,6 +16,7 @@ find_package(rclcpp REQUIRED)
 find_package(nav2_mppi_controller REQUIRED)
 find_package(nav2_core REQUIRED)
 find_package(pluginlib REQUIRED)
+find_package(rcl_interfaces REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(nav2_msgs REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
@@ -24,6 +25,9 @@ find_package(OpenCV REQUIRED)
 # Build the critic plugin as a shared library
 add_library(collision_angle_critic SHARED
   src/collision_angle_critic.cpp)
+target_include_directories(collision_angle_critic PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
 ament_target_dependencies(collision_angle_critic
   rclcpp
   nav2_mppi_controller
@@ -35,6 +39,7 @@ add_executable(edt_publisher_node src/edt_publisher_node.cpp)
 ament_target_dependencies(edt_publisher_node
   rclcpp
   nav_msgs
+  rcl_interfaces
   nav2_msgs
   nav2_costmap_2d
   OpenCV)
@@ -46,6 +51,11 @@ install(TARGETS
 install(TARGETS
   edt_publisher_node
   DESTINATION lib/${PROJECT_NAME})
+
+# Install headers
+install(
+  DIRECTORY include/
+  DESTINATION include)
 
 # Install and export the plugin definition
 install(

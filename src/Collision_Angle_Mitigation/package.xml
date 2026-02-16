@@ -15,6 +15,7 @@
   <depend>nav2_costmap_2d</depend>
   <depend>nav_msgs</depend>
   <depend>nav2_msgs</depend>
+  <depend>rcl_interfaces</depend>
   <depend>pluginlib</depend>
   <depend>libopencv-dev</depend>
 
