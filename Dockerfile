@@ -6,6 +6,9 @@ RUN apt-get update && apt-get install -y \
     ros-jazzy-nav2-bringup \
     ros-jazzy-nav2-minimal-tb3-sim \
     ros-jazzy-turtlebot3-description \
+    ros-jazzy-ros2-control \
+    ros-jazzy-ros2-controllers \
+    ros-jazzy-controller-manager \
     python3-colcon-common-extensions \
     python3-rosdep \
     python3-vcstool \

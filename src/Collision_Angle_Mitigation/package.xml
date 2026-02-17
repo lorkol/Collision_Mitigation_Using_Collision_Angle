@@ -14,6 +14,9 @@
   <depend>nav2_core</depend>
   <depend>pluginlib</depend>
 
+  <depend>mujoco_ros</depend>
+  <depend>mujoco</depend>
+
   <export>
     <build_type>ament_cmake</build_type>
     <nav2_mppi_controller plugin="${prefix}/plugins.xml" />
