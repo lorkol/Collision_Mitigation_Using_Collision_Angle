@@ -45,4 +45,8 @@ install(FILES plugins.xml
   DESTINATION share/${PROJECT_NAME}
 )
 
+install(DIRECTORY launch models params
+  DESTINATION share/${PROJECT_NAME}
+)
+
 ament_package()
