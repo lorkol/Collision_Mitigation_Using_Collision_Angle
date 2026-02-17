@@ -67,6 +67,12 @@ keep building using:
 colcon build --packages-select Collision_Angle_Mitigation --parallel-workers 2
 ```
 
+Running the node:
+```bash
+source install/setup.bash
+ros2 run Collision_Angle_Mitigation edt_publisher_node
+```
+
 # Misc
 Make sure when opening and connecting to VSCode to download the c/c++ and IntelliJ extensions
 
