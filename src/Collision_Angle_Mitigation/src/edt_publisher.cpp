@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_costmap_2d/edt_publisher.hpp"
+#include "edt_publisher.hpp"
 #include "nav2_costmap_2d/cost_values.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include <memory>
@@ -24,12 +24,10 @@ EDTPublisher::EDTPublisher(
   const nav2_util::LifecycleNode::WeakPtr & parent,
   Costmap2D * costmap,
   const std::string & global_frame,
-  const std::string & topic_name)
-: parent_(parent), costmap_(costmap), global_frame_(global_frame), topic_name_(topic_name)
+  const std::string & topic_name): parent_(parent), costmap_(costmap), global_frame_(global_frame), topic_name_(topic_name)
 {
   auto node = parent.lock();
   clock_ = node->get_clock();
-  logger_ = node->get_logger();
 
   auto custom_qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable();
   edt_pub_ = node->create_publisher<nav_msgs::msg::OccupancyGrid>(topic_name_, custom_qos);

@@ -3,17 +3,15 @@
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/src/Collision_Angle_Mitigation/include",
-                "${workspaceFolder}/src/navigation2/nav2_mppi_controller/include",
-                "${workspaceFolder}/install/nav2_mppi_controller/include",
-                "${workspaceFolder}/install/nav2_core/include",
-                "${workspaceFolder}/install/nav2_behavior_tree/include",
-                "${workspaceFolder}/install/nav2_costmap_2d/include",
-                "${workspaceFolder}/install/nav2_voxel_grid/include",
-                "${workspaceFolder}/install/nav2_util/include",
-                "${workspaceFolder}/install/nav2_msgs/include",
+                "${workspaceFolder}/src/**",
+                "${workspaceFolder}/install/**",
                 "/opt/ros/jazzy/include",
-                "/usr/include"
+                "/opt/ros/jazzy/include/**",
+                "/opt/ros/jazzy/include/rclcpp",
+                "/opt/ros/jazzy/include/rcl_interfaces",
+                "/opt/ros/jazzy/include/nav_msgs",
+                "/usr/include",
+                "/usr/include/opencv4"
             ],
             "defines": [
                 "DEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp",
@@ -22,8 +20,7 @@
             "compilerPath": "/usr/bin/c++",
             "cStandard": "c17",
             "cppStandard": "gnu++17",
-            "intelliSenseMode": "linux-gcc-x64",
-            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+            "intelliSenseMode": "linux-gcc-x64"
         }
     ],
     "version": 4

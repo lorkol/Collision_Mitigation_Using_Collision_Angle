@@ -50,7 +50,6 @@ private:
   std::string global_frame_;
   std::string topic_name_;
   rclcpp::Clock::SharedPtr clock_;
-  rclcpp::Logger logger_;
   rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::OccupancyGrid>::SharedPtr edt_pub_;
 };
 
