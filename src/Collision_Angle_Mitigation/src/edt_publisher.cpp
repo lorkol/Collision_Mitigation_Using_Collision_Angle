@@ -15,6 +15,7 @@
 #include "edt_publisher.hpp"
 #include "nav2_costmap_2d/cost_values.hpp"
 #include "nav_msgs/msg/occupancy_grid.hpp"
+#include <algorithm>
 #include <memory>
 
 namespace nav2_costmap_2d
@@ -63,19 +64,13 @@ void EDTPublisher::publishEDT()
   }
 
   // 1. Create binary map from costmap
-  unsigned char * char_map = costmap_->getCharMap();
+  // Create a cv::Mat header for the costmap data without copying.
+  cv::Mat costmap_mat(height, width, CV_8UC1, const_cast<unsigned char *>(costmap_->getCharMap()));
+  cv::Mat binary_map;
 
-  cv::Mat binary_map(height, width, CV_8UC1);
-  for (unsigned int r = 0; r < height; ++r) {
-    for (unsigned int c = 0; c < width; ++c) {
-      unsigned char cost = char_map[costmap_->getIndex(c, r)];
-      if (cost >= nav2_costmap_2d::LETHAL_OBSTACLE) {
-        binary_map.at<unsigned char>(r, c) = 0;  // Obstacle
-      } else {
-        binary_map.at<unsigned char>(r, c) = 255;  // Free space
-      }
-    }
-  }
+  // Use OpenCV's 'compare' to efficiently create a binary map.
+  // Cells with cost < LETHAL_OBSTACLE become 255 (free), and others become 0 (obstacle).
+  cv::compare(costmap_mat, nav2_costmap_2d::LETHAL_OBSTACLE, binary_map, cv::CMP_LT);
 
   // 2. Compute EDT
   cv::Mat edt_map;
@@ -93,10 +88,10 @@ void EDTPublisher::publishEDT()
   edt_msg->info.width = width;
   edt_msg->info.height = height;
 
-  double wx, wy;
-  costmap_->mapToWorld(0, 0, wx, wy);
-  edt_msg->info.origin.position.x = wx - costmap_->getResolution() / 2;
-  edt_msg->info.origin.position.y = wy - costmap_->getResolution() / 2;
+  // The nav2_costmap_2d::Costmap2D is always axis-aligned WITH ODOM, so we can get the origin directly.
+  //This isnt where the robot is, it's the bottom-left corner of the map relative to odom. The robot is centered in the costmap
+  edt_msg->info.origin.position.x = costmap_->getOriginX();
+  edt_msg->info.origin.position.y = costmap_->getOriginY();
   edt_msg->info.origin.position.z = 0.0;
   edt_msg->info.origin.orientation.w = 1.0;
 
@@ -104,12 +99,14 @@ void EDTPublisher::publishEDT()
 
   // 4. Fill OccupancyGrid data from EDT.
   // The value will be the distance in cells, capped at 100.
-  for (unsigned int j = 0; j < height; ++j) {
-    for (unsigned int i = 0; i < width; ++i) {
-      float dist_pixels = edt_map.at<float>(j, i);
-      edt_msg->data[j * width + i] = static_cast<int8_t>(std::min(100.0f, dist_pixels));
-    }
-  }
+  // Use std::transform for a more efficient and expressive way to fill the data.
+  const size_t num_pixels = static_cast<size_t>(width) * height;
+  const float * edt_data_ptr = edt_map.ptr<float>();
+  std::transform(
+    edt_data_ptr, edt_data_ptr + num_pixels, edt_msg->data.begin(),
+    [](const float dist_pixels) {
+      return static_cast<int8_t>(std::min(100.0f, dist_pixels));
+    });
 
   edt_pub_->publish(std::move(edt_msg));
 }
