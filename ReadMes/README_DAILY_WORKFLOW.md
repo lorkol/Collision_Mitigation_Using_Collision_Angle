@@ -15,7 +15,7 @@ source install/setup.bash
 
 Set the model to Waffle and launch the bringup:
 ```bash
-ros2 launch nav2_bringup tb3_simulation_launch.py headless:=False
+ros2 launch collision_angle_mitigation circular_simulation_launch.py headless:=False
 ```
 
 ## 3. Initialize RViz
