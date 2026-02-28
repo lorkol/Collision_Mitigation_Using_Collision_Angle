@@ -1,16 +1,3 @@
-controller_manager:
-  ros__parameters:
-    update_rate: 100
-    use_sim_time: True
-
-    # This defines the "Joint State Broadcaster" (so we can see wheels move)
-    joint_state_broadcaster:
-      type: joint_state_broadcaster/JointStateBroadcaster
-
-    # This defines the actual motor controller
-    diff_drive_controller:
-      type: diff_drive_controller/DiffDriveController
-
 amcl:
   ros__parameters:
     alpha1: 0.2
@@ -85,7 +72,6 @@ controller_server:
     min_x_velocity_threshold: 0.001
     min_y_velocity_threshold: 0.5
     min_theta_velocity_threshold: 0.001
-    failure_tolerance: 0.3
     failure_tolerance: 0.3
     progress_checker_plugins: ["progress_checker"]
     goal_checker_plugins: ["general_goal_checker"] # "precise_goal_checker"
@@ -288,8 +274,6 @@ map_saver:
     free_thresh_default: 0.25
     occupied_thresh_default: 0.65
     map_subscribe_transient_local: True
-    publish_edt: true
-    edt_topic: "edt_map"
 
 planner_server:
   ros__parameters:

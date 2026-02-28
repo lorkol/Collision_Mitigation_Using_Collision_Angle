@@ -19,5 +19,5 @@
             "group": "Default"
         }
     ],
-    "cmake.sourceDirectory": "/ros2_ws/src/Mobile-Robot-Collision/src/Collision_Angle_Mitigation"
+    "cmake.sourceDirectory": "/ros2_ws/src/Mobile-Robot-Collision/src/collision_angle_mitigation"
 }

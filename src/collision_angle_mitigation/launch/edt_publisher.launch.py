@@ -4,7 +4,7 @@ from launch_ros.actions import Node
 def generate_launch_description():
     return LaunchDescription([
         Node(
-            package='Collision_Angle_Mitigation',
+            package='collision_angle_mitigation',
             executable='edt_publisher_node',
             name='edt_publisher_node',
             output='screen',

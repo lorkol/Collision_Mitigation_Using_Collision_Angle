@@ -31,7 +31,7 @@ In the repo, under .vscode, add a c_cpp_properties.json: (After adding the c/c++
         {
             "name": "Linux",
             "includePath": [
-                "${workspaceFolder}/src/Collision_Angle_Mitigation/include",
+                "${workspaceFolder}/src/collision_angle_mitigation/include",
                 "${workspaceFolder}/src/navigation2/nav2_mppi_controller/include",
                 "${workspaceFolder}/install/nav2_mppi_controller/include",
                 "${workspaceFolder}/install/nav2_core/include",

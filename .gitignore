@@ -11,3 +11,5 @@ __pycache__/
 # Docker/System
 .DS_Store
 *.swp
+
+Backups/

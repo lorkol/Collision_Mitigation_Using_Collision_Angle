@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.8)
-project(Collision_Angle_Mitigation)
+project(collision_angle_mitigation)
 
 # Default to C++17
 if(NOT CMAKE_CXX_STANDARD)
@@ -66,7 +66,7 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-install(DIRECTORY launch models params
+install(DIRECTORY launch models params urdf worlds configs maps rviz
   DESTINATION share/${PROJECT_NAME}
 )
 

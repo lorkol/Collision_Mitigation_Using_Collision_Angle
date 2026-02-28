@@ -64,13 +64,13 @@ source ~/ros2_ws/install/setup.bash
 # While working on EDT:
 keep building using:
 ```bash
-colcon build --packages-select Collision_Angle_Mitigation --parallel-workers 2
+colcon build --packages-select collision_angle_mitigation --parallel-workers 2
 ```
 
 Running the node:
 ```bash
 source install/setup.bash
-ros2 run Collision_Angle_Mitigation edt_publisher_node
+ros2 run collision_angle_mitigation edt_publisher_node
 ```
 
 # Misc

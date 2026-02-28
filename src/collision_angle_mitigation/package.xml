@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>Collision_Angle_Mitigation</name>
+  <name>collision_angle_mitigation</name>
   <version>0.0.0</version>
   <description>Collision Angle Mitigation Critic for Nav2 MPPI</description>
   <maintainer email="user@todo.todo">user</maintainer>
@@ -21,5 +21,9 @@
   <export>
     <build_type>ament_cmake</build_type>
     <nav2_mppi_controller plugin="${prefix}/plugins.xml" />
-  </export>
+    <build_type>ament_cmake</build_type>
+    <gz_sim_resource_path>${prefix}/share/${name}/worlds</gz_sim_resource_path>
+    <gz_sim_resource_path>${prefix}/share/${name}/models</gz_sim_resource_path>
+</export>
+
 </package>
