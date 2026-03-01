@@ -18,7 +18,7 @@ class EdtMonitorNode : public rclcpp::Node {
 public:
     EdtMonitorNode() : Node("edt_monitor_node") {
         // Parameters
-        this->declare_parameter("robot_radius", 0.3); // TODO see how I can get this from the parameters file
+        this->declare_parameter("robot_radius", 0.17); // TODO see how I can get this from the parameters file
         this->declare_parameter("base_frame", "base_link");
         this->declare_parameter("edt_topic", "edt_map");
         this->declare_parameter("robot_pose_topic", "amcl_pose"); // TODO Make this more generic or use TF only

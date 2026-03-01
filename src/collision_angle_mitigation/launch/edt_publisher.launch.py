@@ -27,7 +27,7 @@ def generate_launch_description():
         output='screen',
         parameters=[{
             'use_sim_time': use_sim_time,
-            'robot_radius': 0.3,
+            'robot_radius': 0.17,
             'base_frame': 'base_footprint'
         }]
     )
