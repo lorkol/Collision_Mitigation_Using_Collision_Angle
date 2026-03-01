@@ -162,7 +162,7 @@ private:
         pose_msg_.pose.position.z = 0.0;
 
         yaw_ = std::atan2(static_cast<double>(best_dy_), static_cast<double>(best_dx_));
-        q_.setRPY(0, 0, yaw_);
+        q_.setRPY(0, 0, yaw_+ M_PI); // Pointing towards the direction of steepest descent
         pose_msg_.pose.orientation = tf2::toMsg(q_);
 
         min_pose_pub_->publish(pose_msg_);
