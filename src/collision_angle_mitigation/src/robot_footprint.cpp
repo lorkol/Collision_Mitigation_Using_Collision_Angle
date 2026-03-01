@@ -1,4 +1,4 @@
-#include "edt_monitor/robot_footprint.hpp"
+#include "robot_footprint.hpp"
 
 #include <cmath>
 #include <algorithm>
