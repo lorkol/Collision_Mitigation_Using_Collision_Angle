@@ -59,7 +59,7 @@ docker exec -it 50a1c7276078 bash
 Then in the container run
 ```bash
 source /opt/ros/jazzy/setup.bash
-source ~/ros2_ws/install/setup.bash
+source /ros2_ws/install/setup.bash
 ``` 
 # While working on EDT:
 keep building using:

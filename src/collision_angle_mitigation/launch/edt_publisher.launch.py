@@ -9,7 +9,7 @@ def generate_launch_description():
             name='edt_publisher_node',
             output='screen',
             parameters=[{
-                'costmap_topic': '/global_costmap/costmap_raw',
+                'costmap_topic': '/local_costmap/costmap',
                 'edt_map_topic': '/edt_map',
                 'obstacle_threshold': 254  # nav2_costmap_2d::LETHAL_OBSTACLE
             }]

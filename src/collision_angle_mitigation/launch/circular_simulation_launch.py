@@ -250,6 +250,13 @@ def generate_launch_description():
                           'pitch': pose['P'],
                           'yaw': pose['Y']}.items())
 
+
+    edt_publisher_cmd = IncludeLaunchDescription(
+        PythonLaunchDescriptionSource(
+            os.path.join(launch_dir, 'edt_publisher.launch.py')
+        )
+    )
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -283,5 +290,6 @@ def generate_launch_description():
     ld.add_action(start_robot_state_publisher_cmd)
     ld.add_action(rviz_cmd)
     ld.add_action(bringup_cmd)
+    ld.add_action(edt_publisher_cmd)
 
     return ld
