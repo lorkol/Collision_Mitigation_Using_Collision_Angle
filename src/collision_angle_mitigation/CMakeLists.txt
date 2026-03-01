@@ -20,6 +20,9 @@ find_package(rcl_interfaces REQUIRED)
 find_package(nav_msgs REQUIRED)
 find_package(nav2_costmap_2d REQUIRED)
 find_package(OpenCV REQUIRED)
+find_package(geometry_msgs REQUIRED)
+find_package(tf2_ros REQUIRED)
+find_package(tf2_geometry_msgs REQUIRED)
 
 # Build the critic plugin as a shared library
 add_library(collision_angle_critic SHARED
@@ -42,12 +45,28 @@ ament_target_dependencies(edt_publisher_node
   nav2_costmap_2d
   OpenCV)
 
+# Build the EDT monitor node
+add_executable(edt_monitor_node
+  src/edt_monitor_node.cpp
+  src/robot_footprint.cpp
+)
+target_include_directories(edt_monitor_node PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(edt_monitor_node
+  rclcpp
+  nav_msgs
+  geometry_msgs
+  tf2_ros
+  tf2_geometry_msgs)
+
 # Install library and executable
 install(TARGETS
   collision_angle_critic
   DESTINATION lib)
 install(TARGETS
   edt_publisher_node
+  edt_monitor_node
   DESTINATION lib/${PROJECT_NAME})
 
 # Install headers

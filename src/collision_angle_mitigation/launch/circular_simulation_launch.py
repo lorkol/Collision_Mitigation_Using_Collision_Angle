@@ -254,7 +254,8 @@ def generate_launch_description():
     edt_publisher_cmd = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
             os.path.join(launch_dir, 'edt_publisher.launch.py')
-        )
+        ),
+        launch_arguments={'use_sim_time': use_sim_time}.items()
     )
 
     # Create the launch description and populate
