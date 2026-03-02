@@ -24,6 +24,13 @@ find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
 
+find_package(rosidl_default_generators REQUIRED)
+
+rosidl_generate_interfaces(${PROJECT_NAME}
+  "msg/FloatEDM.msg"
+  DEPENDENCIES std_msgs nav_msgs
+)
+
 # Build the critic plugin as a shared library
 add_library(collision_angle_critic SHARED
   src/collision_angle_critic.cpp)

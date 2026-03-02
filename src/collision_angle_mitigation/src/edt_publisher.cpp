@@ -17,6 +17,7 @@
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include <algorithm>
 #include <memory>
+#include "collision_angle_mitigation/msg/float_edm.hpp"
 
 namespace nav2_costmap_2d
 {

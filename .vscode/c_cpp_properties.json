@@ -11,7 +11,8 @@
                 "/opt/ros/jazzy/include/rcl_interfaces",
                 "/opt/ros/jazzy/include/nav_msgs",
                 "/usr/include",
-                "/usr/include/opencv4"
+                "/usr/include/opencv4",
+                "/ros2_ws/src/Mobile-Robot-Collision/build/collision_angle_mitigation/rosidl_generator_cpp"
             ],
             "defines": [
                 "DEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp",
