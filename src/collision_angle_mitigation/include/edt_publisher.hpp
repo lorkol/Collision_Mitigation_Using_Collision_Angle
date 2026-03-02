@@ -50,7 +50,7 @@ private:
   std::string global_frame_;
   std::string topic_name_;
   rclcpp::Clock::SharedPtr clock_;
-  rclcpp_lifecycle::LifecyclePublisher<nav_msgs::msg::OccupancyGrid>::SharedPtr edt_pub_;
+  rclcpp_lifecycle::LifecyclePublisher<collision_angle_mitigation::msg::FloatEDM>::SharedPtr edt_pub_;
 };
 
 }  // namespace nav2_costmap_2d

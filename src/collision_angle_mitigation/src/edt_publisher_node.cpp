@@ -3,6 +3,7 @@
 #include "nav_msgs/msg/occupancy_grid.hpp"
 #include "opencv2/opencv.hpp"
 #include "nav2_costmap_2d/cost_values.hpp"
+#include "collision_angle_mitigation/msg/float_edm.hpp"
 #include <algorithm>
 
 class EdtPublisherNode : public rclcpp::Node
@@ -29,7 +30,7 @@ public:
       std::bind(&EdtPublisherNode::costmapCallback, this, std::placeholders::_1));
 
     // Publisher for the EDT map
-    edt_pub_ = this->create_publisher<nav_msgs::msg::OccupancyGrid>(edt_map_topic, map_qos);
+    edt_pub_ = this->create_publisher<collision_angle_mitigation::msg::FloatEDM>(edt_map_topic, map_qos);
 
     RCLCPP_INFO(this->get_logger(), "EDT Publisher Node has been started.");
     RCLCPP_INFO(this->get_logger(), "Subscribing to costmap on topic: %s", costmap_topic.c_str());
@@ -66,12 +67,8 @@ private:
     // Cells with cost < threshold become 255 (free), and others become 0 (obstacle).
     cv::compare(costmap_mat, obstacle_threshold_, binary_map_, cv::CMP_LT);
 
-    // 2. Compute the Exact Distance Transform (EDT)
-    // Fills edt_map_ with the distance to the nearest obstacle in pixels
-    cv::distanceTransform(binary_map_, edt_map_, cv::DIST_L2, cv::DIST_MASK_PRECISE);
-
-    // 3. Create and publish the EDT as a nav_msgs::msg::OccupancyGrid
-    auto edt_msg = std::make_unique<nav_msgs::msg::OccupancyGrid>();
+    // 2. Create and publish the EDT as a collision_angle_mitigation::msg::FloatEDM
+    auto edt_msg = std::make_unique<collision_angle_mitigation::msg::FloatEDM>();
 
     edt_msg->header = msg->header;
     edt_msg->info.map_load_time = this->now();
@@ -82,15 +79,10 @@ private:
 
     edt_msg->data.resize(width * height);
 
-    // 4. Fill the OccupancyGrid data with EDT values (distance in cells, capped at 100).
-    // Use std::transform for a more efficient and expressive way to fill the data.
-    const size_t num_pixels = static_cast<size_t>(width) * height;
-    const float * edt_data_ptr = edt_map_.ptr<float>();
-    std::transform(
-      edt_data_ptr, edt_data_ptr + num_pixels, edt_msg->data.begin(),
-      [](const float dist_pixels) {
-        return static_cast<int8_t>(std::min(100.0f, dist_pixels));
-      });
+    // 3. Compute EDT directly into the message buffer
+    // Create a cv::Mat header that points directly to the message's data buffer
+    cv::Mat edt_map(height, width, CV_32F, edt_msg->data.data());
+    cv::distanceTransform(binary_map_, edt_map, cv::DIST_L2, cv::DIST_MASK_PRECISE);
 
     edt_pub_->publish(std::move(edt_msg));
     // RCLCPP_INFO(this->get_logger(), "Published EDT map.");
@@ -112,10 +104,10 @@ private:
   }
 
   rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr costmap_sub_;
-  rclcpp::Publisher<nav_msgs::msg::OccupancyGrid>::SharedPtr edt_pub_;
+  rclcpp::Publisher<collision_angle_mitigation::msg::FloatEDM>::SharedPtr edt_pub_;
   int obstacle_threshold_;
   OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
-  cv::Mat binary_map_, edt_map_;
+  cv::Mat binary_map_;
 };
 
 int main(int argc, char * argv[])

@@ -12,6 +12,9 @@
 #include <tf2_ros/transform_listener.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 
+#include "collision_angle_mitigation/msg/float_edm.hpp"
+
+
 namespace edt_monitor {
 
 class EdtMonitorNode : public rclcpp::Node {
@@ -32,7 +35,7 @@ public:
         footprint_model_ = std::make_unique<CircularFootprint>(radius);
 
         // Subscribers and Publishers
-        edt_sub_ = this->create_subscription<nav_msgs::msg::OccupancyGrid>(
+        edt_sub_ = this->create_subscription<collision_angle_mitigation::msg::FloatEDM>(
             edt_topic, 1, std::bind(&EdtMonitorNode::edtCallback, this, std::placeholders::_1));
         
         pose_sub_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -48,43 +51,40 @@ public:
     }
 
 private:
-    void edtCallback(const nav_msgs::msg::OccupancyGrid::SharedPtr msg) {
-        last_map_ = msg;
+    void edtCallback(const collision_angle_mitigation::msg::FloatEDM::SharedPtr msg) {
+        edt_map_ = msg;
     }
 
+    // TODO: This is currently called when the robot moves, but will need to somehow move to the MPPI trajectories
     void poseCallback(const geometry_msgs::msg::PoseWithCovarianceStamped::SharedPtr /*msg*/) {
         get_EDT_grad();
     }
 
     void get_EDT_grad() {
-        if (!last_map_) {
+        if (!edt_map_) {
             return;
         }
 
-        // Update cached map info if the map pointer has changed
-        if (last_map_ != cached_map_) {
-            // Only update metadata if it actually changed
-            if (cached_map_ == nullptr){
-                map_res_ = last_map_->info.resolution;
-                map_width_ = static_cast<int>(last_map_->info.width);
-                map_height_ = static_cast<int>(last_map_->info.height);
-            }
-            else if (cached_map_ == nullptr ||
-                last_map_->info.origin.position.x != map_origin_x_ ||
-                last_map_->info.origin.position.y != map_origin_y_) {
-                map_origin_x_ = last_map_->info.origin.position.x;
-                map_origin_y_ = last_map_->info.origin.position.y;
-            }
-            cached_map_ = last_map_;
-            
-            // Update message headers to match the current map
-            pose_msg_.header = cached_map_->header;
+        // Only update metadata the 1st time
+        if (map_width_ == 0){
+            map_res_ = edt_map_->info.resolution;
+            map_width_ = static_cast<int>(edt_map_->info.width);
+            map_height_ = static_cast<int>(edt_map_->info.height);
         }
+        //If the map changed
+        else if (edt_map_->info.origin.position.x != map_origin_x_ ||
+                edt_map_->info.origin.position.y != map_origin_y_) {
+                map_origin_x_ = edt_map_->info.origin.position.x;
+                map_origin_y_ = edt_map_->info.origin.position.y;
+        }
+        
+        // Update message headers to match the current map
+        pose_msg_.header = edt_map_->header;
 
         // 1. Get Robot Pose in Map Frame
         try {
             geometry_msgs::msg::TransformStamped transform = tf_buffer_->lookupTransform(
-                cached_map_->header.frame_id, base_frame_, tf2::TimePointZero);
+                edt_map_->header.frame_id, base_frame_, tf2::TimePointZero);
             
             robot_pose_.position.x = transform.transform.translation.x;
             robot_pose_.position.y = transform.transform.translation.y;
@@ -97,20 +97,20 @@ private:
         }
 
         // 2. Get indices under footprint
-        footprint_model_->getIndices(robot_pose_, cached_map_->info, footprint_indices_);
+        footprint_model_->getIndices(robot_pose_, edt_map_->info, footprint_indices_);
         if (footprint_indices_.empty()) return;
 
         // 3. Find point with Minimum EDT value
-        min_val_ = std::numeric_limits<int>::max();
+        min_val_ = std::numeric_limits<float>::max();
         min_idx_ = {-1, -1};
 
-        const auto& data = cached_map_->data;
+        const std::vector<float>& data = edt_map_->data;
         for (const MapIndex& idx : footprint_indices_) {
             index_ = idx.y * map_width_ + idx.x;
-            int8_t val = data[index_];
-            // Assuming -1 is unknown/invalid, skip it. 
-            // TODO If the EDT map uses -1 for something else, adjust this check.
-            if (val != -1 && val < min_val_) {
+            float val = data[index_];
+            // Assuming -1.0 is unknown/invalid, skip it. 
+            // TODO If the EDT map uses -1.0 for something else, adjust this check.
+            if (val != -1.0 && val < min_val_) {
                 min_val_ = val;
                 min_idx_ = idx;
             }
@@ -173,18 +173,17 @@ private:
         // Check if coordinates are outside map boundaries
         if (ix < 0 || ix >= map_width_ || iy < 0 || iy >= map_height_) return -1.0;
         // Return the value at the calculated linear index
-        return static_cast<double>(cached_map_->data[iy * map_width_ + ix]);
+        return edt_map_->data[iy * map_width_ + ix];
     }
 
     std::string base_frame_;
     std::unique_ptr<RobotFootprint> footprint_model_;
-    rclcpp::Subscription<nav_msgs::msg::OccupancyGrid>::SharedPtr edt_sub_;
+    rclcpp::Subscription<collision_angle_mitigation::msg::FloatEDM>::SharedPtr edt_sub_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr min_pose_pub_;
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
     std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
     rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pose_sub_;
-    nav_msgs::msg::OccupancyGrid::SharedPtr last_map_;
-    nav_msgs::msg::OccupancyGrid::SharedPtr cached_map_;
+    collision_angle_mitigation::msg::FloatEDM::SharedPtr edt_map_;
     std::vector<MapIndex> footprint_indices_;
     
     // Cached map info and reusable variables
@@ -202,7 +201,7 @@ private:
     double wy_{0.0};
     double center_val_{0.0};
     int index_;
-    int min_val_;
+    float min_val_;
     int best_dx_{0};
     int best_dy_{0};
     double max_slope_{0.0};

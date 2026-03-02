@@ -32,7 +32,7 @@ EDTPublisher::EDTPublisher(
   clock_ = node->get_clock();
 
   auto custom_qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable();
-  edt_pub_ = node->create_publisher<nav_msgs::msg::OccupancyGrid>(topic_name_, custom_qos);
+  edt_pub_ = node->create_publisher<collision_angle_mitigation::msg::FloatEDM>(topic_name_, custom_qos);
 }
 
 EDTPublisher::~EDTPublisher()
@@ -73,23 +73,17 @@ void EDTPublisher::publishEDT()
   // Cells with cost < LETHAL_OBSTACLE become 255 (free), and others become 0 (obstacle).
   cv::compare(costmap_mat, nav2_costmap_2d::LETHAL_OBSTACLE, binary_map, cv::CMP_LT);
 
-  // 2. Compute EDT
-  cv::Mat edt_map;
-  cv::distanceTransform(binary_map, edt_map, cv::DIST_L2, cv::DIST_MASK_PRECISE);
-  // edt_map is CV_32F, with distances in pixels (cells).
-
-  // 3. Create OccupancyGrid message
-  auto edt_msg = std::make_unique<nav_msgs::msg::OccupancyGrid>();
+  // 2. Create FloatEDM message
+  auto edt_msg = std::make_unique<collision_angle_mitigation::msg::FloatEDM>();
 
   edt_msg->header.stamp = clock_->now();
   edt_msg->header.frame_id = global_frame_;
-
   edt_msg->info.map_load_time = edt_msg->header.stamp;
   edt_msg->info.resolution = costmap_->getResolution();
   edt_msg->info.width = width;
   edt_msg->info.height = height;
 
-  // The nav2_costmap_2d::Costmap2D is always axis-aligned WITH ODOM, so we can get the origin directly.
+  // The collision_angle_mitigation::msg::FloatEDM is always axis-aligned WITH ODOM, so we can get the origin directly.
   //This isnt where the robot is, it's the bottom-left corner of the map relative to odom. The robot is centered in the costmap
   edt_msg->info.origin.position.x = costmap_->getOriginX();
   edt_msg->info.origin.position.y = costmap_->getOriginY();
@@ -98,16 +92,10 @@ void EDTPublisher::publishEDT()
 
   edt_msg->data.resize(width * height);
 
-  // 4. Fill OccupancyGrid data from EDT.
-  // The value will be the distance in cells, capped at 100.
-  // Use std::transform for a more efficient and expressive way to fill the data.
-  const size_t num_pixels = static_cast<size_t>(width) * height;
-  const float * edt_data_ptr = edt_map.ptr<float>();
-  std::transform(
-    edt_data_ptr, edt_data_ptr + num_pixels, edt_msg->data.begin(),
-    [](const float dist_pixels) {
-      return static_cast<int8_t>(std::min(100.0f, dist_pixels));
-    });
+  // 3. Compute EDT directly into the message buffer
+  // Create a cv::Mat header that points directly to the message's data buffer
+  cv::Mat edt_map(height, width, CV_32F, edt_msg->data.data());
+  cv::distanceTransform(binary_map, edt_map, cv::DIST_L2, cv::DIST_MASK_PRECISE);
 
   edt_pub_->publish(std::move(edt_msg));
 }

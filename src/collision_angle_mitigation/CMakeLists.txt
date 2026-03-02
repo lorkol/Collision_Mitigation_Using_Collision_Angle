@@ -30,6 +30,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "msg/FloatEDM.msg"
   DEPENDENCIES std_msgs nav_msgs
 )
+rosidl_get_typesupport_target(cpp_typesupport_target
+  ${PROJECT_NAME} "rosidl_typesupport_cpp")
 
 # Build the critic plugin as a shared library
 add_library(collision_angle_critic SHARED
@@ -51,6 +53,7 @@ ament_target_dependencies(edt_publisher_node
   rcl_interfaces
   nav2_costmap_2d
   OpenCV)
+target_link_libraries(edt_publisher_node "${cpp_typesupport_target}")
 
 # Build the EDT monitor node
 add_executable(edt_monitor_node
@@ -66,6 +69,7 @@ ament_target_dependencies(edt_monitor_node
   geometry_msgs
   tf2_ros
   tf2_geometry_msgs)
+target_link_libraries(edt_monitor_node "${cpp_typesupport_target}")
 
 # Install library and executable
 install(TARGETS
