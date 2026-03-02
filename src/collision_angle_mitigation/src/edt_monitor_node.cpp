@@ -97,7 +97,7 @@ private:
         }
 
         // 2. Get indices under footprint
-        footprint_model_->getIndices(robot_pose_, *cached_map_, footprint_indices_);
+        footprint_model_->getIndices(robot_pose_, cached_map_->info, footprint_indices_);
         if (footprint_indices_.empty()) return;
 
         // 3. Find point with Minimum EDT value

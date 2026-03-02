@@ -9,23 +9,23 @@ CircularFootprint::CircularFootprint(double radius) : radius_(radius), res_(-1.0
 
 void CircularFootprint::getIndices(
     const geometry_msgs::msg::Pose& robot_pose,
-    const nav_msgs::msg::OccupancyGrid& map,
+    const nav_msgs::msg::MapMetaData& map_info,
     std::vector<MapIndex>& out_indices) const {
     
     out_indices.clear();
 
-    if (map.info.resolution != res_) {
-        res_ = map.info.resolution;
+    if (map_info.resolution != res_) {
+        res_ = map_info.resolution;
         r_cells_ = radius_ / res_;
         n_steps_ = static_cast<int>(std::ceil(2 * M_PI * r_cells_ * 2.0));
         if (n_steps_ < 8) n_steps_ = 8;
     }
     if (res_ <= 0.0) return;
 
-    origin_x_ = map.info.origin.position.x;
-    origin_y_ = map.info.origin.position.y;
-    width_ = map.info.width;
-    height_ = map.info.height;
+    origin_x_ = map_info.origin.position.x;
+    origin_y_ = map_info.origin.position.y;
+    width_ = map_info.width;
+    height_ = map_info.height;
 
     // 1. robot_pose.position is in the Map's frame (e.g., "odom").
     // 2. origin is the position of cell (0,0) of the EDT in the Odom's frame.
