@@ -230,7 +230,7 @@ local_costmap:
         plugin: "collision_angle_mitigation::EdtLayer"
         enabled: true
         obstacle_threshold: 254 # Costmap values >= this are considered obstacles for EDT computation - So only ACTUAL obstacles, not inflation
-        edt_topic: "edt_map"
+        edt_topic: "/edt_map"
 
 global_costmap:
   global_costmap:

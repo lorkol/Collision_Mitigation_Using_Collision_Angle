@@ -1,6 +1,7 @@
 #ifndef COLLISION_ANGLE_MITIGATION__EDT_LAYER_HPP_
 #define COLLISION_ANGLE_MITIGATION__EDT_LAYER_HPP_
 
+#include "rclcpp_lifecycle/lifecycle_publisher.hpp"
 #include <mutex>
 #include "rclcpp/rclcpp.hpp"
 #include "nav2_costmap_2d/layer.hpp"
@@ -28,6 +29,9 @@ public:
     nav2_costmap_2d::Costmap2D & master_grid,
     int min_i, int min_j, int max_i, int max_j);
 
+  virtual void activate() override;
+  virtual void deactivate() override;
+
   virtual void reset();
   virtual bool isClearable() { return false; }
 
@@ -46,7 +50,7 @@ private:
   cv::Mat binary_map_;
   mutable std::mutex edt_mutex_; // Protects the shared float map
   int obstacle_threshold_;
-  rclcpp::Publisher<collision_angle_mitigation::msg::FloatEDM>::SharedPtr edt_pub_;
+  rclcpp_lifecycle::LifecyclePublisher<collision_angle_mitigation::msg::FloatEDM>::SharedPtr edt_pub_;
 };
 
 } // namespace collision_angle_mitigation

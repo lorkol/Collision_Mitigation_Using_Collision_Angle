@@ -1,5 +1,4 @@
-#include "collision_angle_mitigation/edt_layer.hpp"
-#include "nav2_costmap_2d/costmap_math.hpp"
+#include "edt_layer.hpp"
 #include "nav2_costmap_2d/cost_values.hpp"
 #include "pluginlib/class_list_macros.hpp"
 
@@ -20,7 +19,7 @@ void EdtLayer::onInitialize()
 
   declareParameter("enabled", rclcpp::ParameterValue(true));
   declareParameter("obstacle_threshold", rclcpp::ParameterValue(100));
-  declareParameter("edt_topic", rclcpp::ParameterValue("edt_map"));
+  declareParameter("edt_topic", rclcpp::ParameterValue("/edt_map"));
 
   node->get_parameter(name_ + "." + "enabled", enabled_);
   node->get_parameter(name_ + "." + "obstacle_threshold", obstacle_threshold_);
@@ -28,16 +27,18 @@ void EdtLayer::onInitialize()
   std::string topic;
   node->get_parameter(name_ + "." + "edt_topic", topic);
 
+  // Define custom_qos before using it
   auto custom_qos = rclcpp::QoS(rclcpp::KeepLast(1)).transient_local().reliable();
   edt_pub_ = node->create_publisher<collision_angle_mitigation::msg::FloatEDM>(
       topic, custom_qos);
       
+  RCLCPP_INFO(logger_, "EDT Layer initialized successfully. Publishing to: %s", topic.c_str());
   current_ = true;
 }
 
 void EdtLayer::updateBounds(
   double /*robot_x*/, double /*robot_y*/, double /*robot_yaw*/,
-  double * min_x, double * min_y, double * max_x, double * max_y)
+  double * /*min_x*/, double * /*min_y*/, double * /*max_x*/, double * /*max_y*/)
 {
   if (!enabled_) return;
   // We don't need to expand bounds because we don't write to the master_grid costmap,
@@ -53,6 +54,10 @@ void EdtLayer::updateCosts(
   unsigned int size_x = master_grid.getSizeInCellsX();
   unsigned int size_y = master_grid.getSizeInCellsY();
   unsigned char* char_map = master_grid.getCharMap();
+
+  if (size_x == 0 || size_y == 0) {
+    return;
+  }
 
   // 1. Wrap master grid in OpenCV Mat (No copy yet)
   cv::Mat master_mat(size_y, size_x, CV_8UC1, char_map);
@@ -94,6 +99,19 @@ void EdtLayer::updateCosts(
     std::lock_guard<std::mutex> lock(edt_mutex_);
     std::swap(edt_float_grid_, edt_scratch_);
   }
+}
+
+void EdtLayer::activate()
+{
+  edt_pub_->on_activate();
+  RCLCPP_INFO(logger_, "EDT Layer activated");
+  current_ = true;
+}
+
+void EdtLayer::deactivate()
+{
+  edt_pub_->on_deactivate();
+  current_ = false;
 }
 
 cv::Mat EdtLayer::getEdt()

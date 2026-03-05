@@ -53,6 +53,7 @@ target_include_directories(edt_layer PUBLIC
 ament_target_dependencies(edt_layer
   rclcpp
   nav2_costmap_2d
+  rclcpp_lifecycle
   pluginlib
   OpenCV)
 target_link_libraries(edt_layer "${cpp_typesupport_target}")
