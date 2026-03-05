@@ -45,6 +45,18 @@ ament_target_dependencies(collision_angle_critic
   nav2_core
   pluginlib)
 
+# Build the EDT Layer plugin
+add_library(edt_layer SHARED src/edt_layer.cpp)
+target_include_directories(edt_layer PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(edt_layer
+  rclcpp
+  nav2_costmap_2d
+  pluginlib
+  OpenCV)
+target_link_libraries(edt_layer "${cpp_typesupport_target}")
+
 # Build the EDT publisher as an executable
 add_executable(edt_publisher_node src/edt_publisher_node.cpp)
 ament_target_dependencies(edt_publisher_node
@@ -74,6 +86,7 @@ target_link_libraries(edt_monitor_node "${cpp_typesupport_target}")
 # Install library and executable
 install(TARGETS
   collision_angle_critic
+  edt_layer
   DESTINATION lib)
 install(TARGETS
   edt_publisher_node
@@ -87,9 +100,10 @@ install(
 
 # Install and export the plugin definition
 install(
-  FILES plugins.xml
+  FILES plugins.xml costmap_plugins.xml
   DESTINATION share/${PROJECT_NAME})
 pluginlib_export_plugin_description_file(nav2_mppi_controller plugins.xml)
+pluginlib_export_plugin_description_file(nav2_costmap_2d costmap_plugins.xml)
 
 if(BUILD_TESTING)
   find_package(ament_lint_auto REQUIRED)

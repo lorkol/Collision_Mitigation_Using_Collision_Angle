@@ -28,6 +28,7 @@
   <export>
     <build_type>ament_cmake</build_type>
     <nav2_mppi_controller plugin="${prefix}/plugins.xml" />
+    <nav2_costmap_2d plugin="${prefix}/costmap_plugins.xml" />
     <gz_sim_resource_path>${prefix}/share/${name}/worlds</gz_sim_resource_path>
     <gz_sim_resource_path>${prefix}/share/${name}/models</gz_sim_resource_path>
   </export>
