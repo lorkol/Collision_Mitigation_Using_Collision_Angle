@@ -12,14 +12,6 @@ def generate_launch_description():
         description='Use simulation (Gazebo) clock if true'
     )
 
-    edt_publisher_node = Node(
-        package='collision_angle_mitigation',
-        executable='edt_publisher_node',
-        name='edt_publisher_node',
-        output='screen',
-        parameters=[{'use_sim_time': use_sim_time}]
-    )
-
     edt_monitor_node = Node(
         package='collision_angle_mitigation',
         executable='edt_monitor_node',
@@ -34,7 +26,6 @@ def generate_launch_description():
 
     ld = LaunchDescription()
     ld.add_action(declare_use_sim_time_cmd)
-    ld.add_action(edt_publisher_node)
     ld.add_action(edt_monitor_node)
 
     return ld
