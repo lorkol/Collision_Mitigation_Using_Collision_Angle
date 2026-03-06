@@ -11,8 +11,8 @@ namespace edt_gradient_estimator
 double getMapValue(int ix, int iy, const cv::Mat & edt_map){
     // Check if coordinates are outside map boundaries
     if (ix < 0 || ix >= edt_map.cols || iy < 0 || iy >= edt_map.rows) return -1.0;
-    // Return the value at the calculated linear index
-    return edt_map.data[iy * edt_map.cols + ix];
+    // Return the value at the calculated linear index    
+    return static_cast<double>(edt_map.at<float>(iy, ix));
 }
 
 EdtGradientEstimator::EdtGradientEstimator(double robot_radius)
@@ -94,6 +94,7 @@ bool EdtGradientEstimator::getGrad(
           ny_ >= 0 && ny_ < static_cast<int>(map_info.height))
       {
         val_ = getMapValue(nx_, ny_, edt_map);
+        if (val_ < 0.0f) continue;
         diff_ = center_val_ - val_; // Positive if neighbor is smaller (descent)
         if (diff_ > 0) {
           dist_ = (dx != 0 && dy != 0) ? 1.41421356 : 1.0;
