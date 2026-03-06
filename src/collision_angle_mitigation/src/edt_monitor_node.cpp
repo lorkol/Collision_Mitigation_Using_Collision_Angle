@@ -14,7 +14,7 @@
 
 #include "collision_angle_mitigation/msg/float_edm.hpp"
 
-
+using namespace collision_angle_mitigation;
 namespace edt_monitor {
 
 class EdtMonitorNode : public rclcpp::Node {
@@ -35,7 +35,7 @@ public:
         footprint_model_ = std::make_unique<CircularFootprint>(radius);
 
         // Subscribers and Publishers
-        edt_sub_ = this->create_subscription<collision_angle_mitigation::msg::FloatEDM>(
+        edt_sub_ = this->create_subscription<msg::FloatEDM>(
             edt_topic, 1, std::bind(&EdtMonitorNode::edtCallback, this, std::placeholders::_1));
         
         pose_sub_ = this->create_subscription<geometry_msgs::msg::PoseWithCovarianceStamped>(
@@ -51,7 +51,7 @@ public:
     }
 
 private:
-    void edtCallback(const collision_angle_mitigation::msg::FloatEDM::SharedPtr msg) {
+    void edtCallback(const msg::FloatEDM::SharedPtr msg) {
         edt_map_ = msg;
     }
 
@@ -178,12 +178,12 @@ private:
 
     std::string base_frame_;
     std::unique_ptr<RobotFootprint> footprint_model_;
-    rclcpp::Subscription<collision_angle_mitigation::msg::FloatEDM>::SharedPtr edt_sub_;
+    rclcpp::Subscription<msg::FloatEDM>::SharedPtr edt_sub_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr min_pose_pub_;
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
     std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
     rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pose_sub_;
-    collision_angle_mitigation::msg::FloatEDM::SharedPtr edt_map_;
+    msg::FloatEDM::SharedPtr edt_map_;
     std::vector<MapIndex> footprint_indices_;
     
     // Cached map info and reusable variables

@@ -1,11 +1,11 @@
-#ifndef EDT_MONITOR__ROBOT_FOOTPRINT_HPP_
-#define EDT_MONITOR__ROBOT_FOOTPRINT_HPP_
+#ifndef COLLISION_ANGLE_MITIGATION__ROBOT_FOOTPRINT_HPP_
+#define COLLISION_ANGLE_MITIGATION__ROBOT_FOOTPRINT_HPP_
 
 #include <vector>
 #include <geometry_msgs/msg/pose.hpp>
 #include <nav_msgs/msg/map_meta_data.hpp>
 
-namespace edt_monitor {
+namespace collision_angle_mitigation{
 
 struct MapIndex {
     int x;
@@ -60,6 +60,6 @@ private:
     mutable int y_;
 };
 
-} // namespace edt_monitor
+} // namespace collision_angle_mitigation
 
-#endif  // EDT_MONITOR__ROBOT_FOOTPRINT_HPP_
+#endif  // COLLISION_ANGLE_MITIGATION__ROBOT_FOOTPRINT_HPP_

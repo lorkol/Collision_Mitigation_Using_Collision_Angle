@@ -58,6 +58,22 @@ ament_target_dependencies(edt_layer
   OpenCV)
 target_link_libraries(edt_layer "${cpp_typesupport_target}")
 
+# Build Collision Mitigation Utils library (Gradient Estimator + Footprint)
+add_library(collision_mitigation_utils SHARED
+  src/edt_gradient_estimator.cpp
+  src/robot_footprint.cpp)
+target_include_directories(collision_mitigation_utils PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(collision_mitigation_utils
+  rclcpp
+  nav2_costmap_2d
+  geometry_msgs
+  nav_msgs
+  tf2_geometry_msgs
+  OpenCV)
+target_link_libraries(collision_mitigation_utils edt_layer) # Links against EdtLayer to use its class definition
+
 # Build the EDT publisher as an executable
 add_executable(edt_publisher_node src/edt_publisher_node.cpp)
 ament_target_dependencies(edt_publisher_node
@@ -70,8 +86,7 @@ target_link_libraries(edt_publisher_node "${cpp_typesupport_target}")
 
 # Build the EDT monitor node
 add_executable(edt_monitor_node
-  src/edt_monitor_node.cpp
-  src/robot_footprint.cpp
+  src/edt_monitor_node.cpp # Note: robot_footprint.cpp removed as it's now in edt_utils
 )
 target_include_directories(edt_monitor_node PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
@@ -82,12 +97,13 @@ ament_target_dependencies(edt_monitor_node
   geometry_msgs
   tf2_ros
   tf2_geometry_msgs)
-target_link_libraries(edt_monitor_node "${cpp_typesupport_target}")
+target_link_libraries(edt_monitor_node "${cpp_typesupport_target}" collision_mitigation_utils)
 
 # Install library and executable
 install(TARGETS
   collision_angle_critic
   edt_layer
+  collision_mitigation_utils
   DESTINATION lib)
 install(TARGETS
   edt_publisher_node

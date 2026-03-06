@@ -3,7 +3,7 @@
 #include <cmath>
 #include <algorithm>
 
-namespace edt_monitor {
+namespace collision_angle_mitigation {
 
 CircularFootprint::CircularFootprint(double radius) : radius_(radius), res_(-1.0) {}
 
@@ -64,4 +64,4 @@ void CircularFootprint::getIndices(
     }
 }
 
-} // namespace edt_monitor
+} // namespace collision_angle_mitigation

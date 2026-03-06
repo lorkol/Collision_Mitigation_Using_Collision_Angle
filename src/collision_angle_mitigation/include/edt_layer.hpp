@@ -42,6 +42,11 @@ public:
    */
   cv::Mat getEdt();
 
+    /**
+   * @brief Accessor for the underlying costmap to get resolution/origin
+   */
+  nav2_costmap_2d::Costmap2D* getCostmap();
+
 private:
   cv::Mat edt_float_grid_;
   // Reusable buffer to avoid reallocations each cycle

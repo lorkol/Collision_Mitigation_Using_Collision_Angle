@@ -12,7 +12,7 @@ EdtLayer::~EdtLayer() {}
 
 void EdtLayer::onInitialize()
 {
-  auto node = node_.lock();
+  auto node = node_.lock(); // Get a shared pointer to the node after locking it
   if (!node) {
     throw std::runtime_error{"Failed to lock node"};
   }
@@ -68,6 +68,14 @@ void EdtLayer::updateCosts(
   cv::compare(master_mat, obstacle_threshold_, binary_map_, cv::CMP_LT);
 
   // 3. Compute EDT into a temporary buffer
+  // Optimization: If the scratch buffer is currently being read by an external node 
+  // (refcount > 1), release it so OpenCV allocates a fresh buffer.
+  // Note: edt_scratch_ holds the *previous* cycle's edt_float_grid_ data due to the swap below.
+  // So if an external node called getEdt(), they are holding a ref to what is now edt_scratch_.
+  // If refcount == 1, we reuse the existing memory (Zero Allocation).
+  if (edt_scratch_.u && edt_scratch_.u->refcount > 1) {
+    edt_scratch_.release();
+  }
   cv::distanceTransform(binary_map_, edt_scratch_, cv::DIST_L2, cv::DIST_MASK_PRECISE);
 
   // 4. Publish for Visualization (Optional)
@@ -97,6 +105,8 @@ void EdtLayer::updateCosts(
   // 5. Write to Shared Memory (Thread Safe)
   {
     std::lock_guard<std::mutex> lock(edt_mutex_);
+    // Swap buffers: edt_float_grid_ gets the new data, edt_scratch_ gets the old data.
+    // In the next cycle, edt_scratch_ (holding the old data) will be checked for external references.
     std::swap(edt_float_grid_, edt_scratch_);
   }
 }
@@ -117,7 +127,12 @@ void EdtLayer::deactivate()
 cv::Mat EdtLayer::getEdt()
 {
   std::lock_guard<std::mutex> lock(edt_mutex_);
-  return edt_float_grid_.clone(); 
+  return edt_float_grid_; 
+}
+
+nav2_costmap_2d::Costmap2D* EdtLayer::getCostmap()
+{
+  return layered_costmap_->getCostmap();
 }
 
 void EdtLayer::reset()
