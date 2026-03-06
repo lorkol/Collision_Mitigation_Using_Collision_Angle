@@ -1,4 +1,4 @@
-#include "robot_footprint.hpp"
+#include "edt_gradient_estimator.hpp"
 
 #include <memory>
 #include <string>
@@ -32,7 +32,7 @@ public:
         std::string robot_pose_topic = this->get_parameter("robot_pose_topic").as_string();
 
         // Initialize footprint model (Polymorphic)
-        footprint_model_ = std::make_unique<CircularFootprint>(radius);
+        edt_estimator_ = std::make_unique<edt_gradient_estimator::EdtGradientEstimator>(radius);
 
         // Subscribers and Publishers
         edt_sub_ = this->create_subscription<msg::FloatEDM>(
@@ -65,22 +65,6 @@ private:
             return;
         }
 
-        // Only update metadata the 1st time
-        if (map_width_ == 0){
-            map_res_ = edt_map_->info.resolution;
-            map_width_ = static_cast<int>(edt_map_->info.width);
-            map_height_ = static_cast<int>(edt_map_->info.height);
-        }
-        //If the map changed
-        else if (edt_map_->info.origin.position.x != map_origin_x_ ||
-                edt_map_->info.origin.position.y != map_origin_y_) {
-                map_origin_x_ = edt_map_->info.origin.position.x;
-                map_origin_y_ = edt_map_->info.origin.position.y;
-        }
-        
-        // Update message headers to match the current map
-        pose_msg_.header = edt_map_->header;
-
         // 1. Get Robot Pose in Map Frame
         try {
             geometry_msgs::msg::TransformStamped transform = tf_buffer_->lookupTransform(
@@ -96,121 +80,26 @@ private:
             return;
         }
 
-        // 2. Get indices under footprint
-        footprint_model_->getIndices(robot_pose_, edt_map_->info, footprint_indices_);
-        if (footprint_indices_.empty()) return;
-
-        // 3. Find point with Minimum EDT value
-        min_val_ = std::numeric_limits<float>::max();
-        min_idx_ = {-1, -1};
-
-        const std::vector<float>& data = edt_map_->data;
-        for (const MapIndex& idx : footprint_indices_) {
-            index_ = idx.y * map_width_ + idx.x;
-            float val = data[index_];
-            // Assuming -1.0 is unknown/invalid, skip it. 
-            // TODO If the EDT map uses -1.0 for something else, adjust this check.
-            if (val != -1.0 && val < min_val_) {
-                min_val_ = val;
-                min_idx_ = idx;
-            }
-        }
-
-        if (min_idx_.x != -1) {
-            publishResult();
-        }
-    }
-
-    void publishResult() {
-        // Calculate World Point using cached map info
-        wx_ = map_origin_x_ + (min_idx_.x + 0.5) * map_res_;
-        wy_ = map_origin_y_ + (min_idx_.y + 0.5) * map_res_;
-
-        // Calculate Gradient using Central Difference
-        // Gradient = (dVal/dx, dVal/dy)
+        // 2. Use Estimator
+        cv::Mat edt_mat(edt_map_->info.height, edt_map_->info.width, CV_32F, const_cast<float*>(edt_map_->data.data()));
         
-        center_val_ = getMapValue(min_idx_.x, min_idx_.y);
-        best_dx_ = 0;
-        best_dy_ = 0;
-        max_slope_ = 0.0;
-
-        // Check 8 neighbors (including diagonals)
-        for (int dy = -1; dy <= 1; ++dy) {
-            for (int dx = -1; dx <= 1; ++dx) {
-                if (dx == 0 && dy == 0) continue;
-
-                val_ = getMapValue(min_idx_.x + dx, min_idx_.y + dy);
-                if (val_ == -1.0) continue;
-
-                // "0 if the pixel itself is the minimum" implies we look for descent (lower values)
-                diff_ = center_val_ - val_;
-                if (diff_ > 0) {
-                    dist_ = (dx != 0 && dy != 0) ? 1.41421356 : 1.0;
-                    slope_ = diff_ / dist_;
-                    if (slope_ > max_slope_) {
-                        max_slope_ = slope_;
-                        best_dx_ = dx;
-                        best_dy_ = dy;
-                    }
-                }
-            }
+        if (edt_estimator_->calculate(robot_pose_, edt_mat, edt_map_->info, pose_msg_)) {
+            pose_msg_.header = edt_map_->header;
+            min_pose_pub_->publish(pose_msg_);
         }
-
-        // Populate PoseStamped with point and gradient orientation
-        pose_msg_.pose.position.x = wx_;
-        pose_msg_.pose.position.y = wy_;
-        pose_msg_.pose.position.z = 0.0;
-
-        yaw_ = std::atan2(static_cast<double>(best_dy_), static_cast<double>(best_dx_));
-        q_.setRPY(0, 0, yaw_+ M_PI); // Pointing towards the direction of steepest descent
-        pose_msg_.pose.orientation = tf2::toMsg(q_);
-
-        min_pose_pub_->publish(pose_msg_);
-    }
-
-    // Helper to safely access map data with bounds checking
-    double getMapValue(int ix, int iy) {
-        // Check if coordinates are outside map boundaries
-        if (ix < 0 || ix >= map_width_ || iy < 0 || iy >= map_height_) return -1.0;
-        // Return the value at the calculated linear index
-        return edt_map_->data[iy * map_width_ + ix];
     }
 
     std::string base_frame_;
-    std::unique_ptr<RobotFootprint> footprint_model_;
+    std::unique_ptr<edt_gradient_estimator::EdtGradientEstimator> edt_estimator_;
     rclcpp::Subscription<msg::FloatEDM>::SharedPtr edt_sub_;
     rclcpp::Publisher<geometry_msgs::msg::PoseStamped>::SharedPtr min_pose_pub_;
     std::unique_ptr<tf2_ros::Buffer> tf_buffer_;
     std::unique_ptr<tf2_ros::TransformListener> tf_listener_;
     rclcpp::Subscription<geometry_msgs::msg::PoseWithCovarianceStamped>::SharedPtr pose_sub_;
     msg::FloatEDM::SharedPtr edt_map_;
-    std::vector<MapIndex> footprint_indices_;
     
-    // Cached map info and reusable variables
-    double map_res_{0.0};
-    int map_width_{0};
-    int map_height_{0};
-    double map_origin_x_{0.0};
-    double map_origin_y_{0.0};
     geometry_msgs::msg::Pose robot_pose_;
-    MapIndex min_idx_;
     geometry_msgs::msg::PoseStamped pose_msg_;
-
-    // Reusable calculation variables
-    double wx_{0.0};
-    double wy_{0.0};
-    double center_val_{0.0};
-    int index_;
-    float min_val_;
-    int best_dx_{0};
-    int best_dy_{0};
-    double max_slope_{0.0};
-    double val_{0.0};
-    double diff_{0.0};
-    double dist_{0.0};
-    double slope_{0.0};
-    tf2::Quaternion q_;
-    double yaw_;
 };
 
 } // namespace edt_monitor
