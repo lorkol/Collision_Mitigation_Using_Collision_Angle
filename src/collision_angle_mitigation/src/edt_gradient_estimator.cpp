@@ -34,36 +34,37 @@ bool EdtGradientEstimator::getMinEDT(
   }
 
   // Get indices under footprint
-  footprint_model_->getIndices(robot_pose, map_info, footprint_indices_);
-  if (footprint_indices_.empty()) {
+  std::vector<MapIndex> footprint_indices;
+  footprint_model_->getIndices(robot_pose, map_info, footprint_indices);
+  if (footprint_indices.empty()) {
     return false;
   }
 
   // Find point with Minimum EDT value
-  min_val_ = std::numeric_limits<float>::max();
-  min_idx_ = {-1, -1};
+  float min_val = std::numeric_limits<float>::max();
+  MapIndex min_idx = {-1, -1};
 
-  for (const auto & idx : footprint_indices_) {
+  for (const auto & idx : footprint_indices) {
     // Check bounds (getIndices usually checks, but safety first)
     if (idx.x >= 0 && idx.x < static_cast<int>(map_info.width) &&
         idx.y >= 0 && idx.y < static_cast<int>(map_info.height))
     {
-      val_ = edt_map.at<float>(idx.y, idx.x);
+      float val = edt_map.at<float>(idx.y, idx.x);
       // Assuming < 0 is invalid/unknown if that convention persists, 
       // though distanceTransform usually returns >= 0.
-      if (val_ < min_val_) {
-        min_val_ = val_;
-        min_idx_ = idx;
+      if (val < min_val) {
+        min_val = val;
+        min_idx = idx;
       }
     }
   }
 
-  if (min_idx_.x == -1) {
+  if (min_idx.x == -1) {
     return false;
   }
 
-  out_min_idx = min_idx_;
-  out_min_val = min_val_;
+  out_min_idx = min_idx;
+  out_min_val = min_val;
   return true;
 }
 
@@ -79,34 +80,35 @@ bool EdtGradientEstimator::getMinEDT(
   }
 
   // Get indices under footprint
-  footprint_model_->getIndices(robot_pose, *costmap, footprint_indices_);
-  if (footprint_indices_.empty()) {
+  std::vector<MapIndex> footprint_indices;
+  footprint_model_->getIndices(robot_pose, *costmap, footprint_indices);
+  if (footprint_indices.empty()) {
     return false;
   }
 
   // Find point with Minimum EDT value
-  min_val_ = std::numeric_limits<float>::max();
-  min_idx_ = {-1, -1};
+  float min_val = std::numeric_limits<float>::max();
+  MapIndex min_idx = {-1, -1};
 
-  for (const auto & idx : footprint_indices_) {
+  for (const auto & idx : footprint_indices) {
     // Check bounds (getIndices usually checks, but safety first)
     if (idx.x >= 0 && idx.x < static_cast<int>(costmap->getSizeInCellsX()) &&
         idx.y >= 0 && idx.y < static_cast<int>(costmap->getSizeInCellsY()))
     {
-      val_ = edt_map.at<float>(idx.y, idx.x);
-      if (val_ < min_val_) {
-        min_val_ = val_;
-        min_idx_ = idx;
+      float val = edt_map.at<float>(idx.y, idx.x);
+      if (val < min_val) {
+        min_val = val;
+        min_idx = idx;
       }
     }
   }
 
-  if (min_idx_.x == -1) {
+  if (min_idx.x == -1) {
     return false;
   }
 
-  out_min_idx = min_idx_;
-  out_min_val = min_val_;
+  out_min_idx = min_idx;
+  out_min_val = min_val;
   return true;
 }
 
@@ -121,31 +123,31 @@ bool EdtGradientEstimator::getGrad(
   }
   
   // Calculate Gradient
-  center_val_ = getMapValue(min_idx.x, min_idx.y, edt_map);
-  best_dx_ = 0;
-  best_dy_ = 0;
-  max_slope_ = 0.0;
+  double center_val = getMapValue(min_idx.x, min_idx.y, edt_map);
+  int best_dx = 0;
+  int best_dy = 0;
+  double max_slope = 0.0;
 
   for (int dy = -1; dy <= 1; ++dy) {
     for (int dx = -1; dx <= 1; ++dx) {
       if (dx == 0 && dy == 0) continue;
       
-      nx_ = min_idx.x + dx;
-      ny_ = min_idx.y + dy;
+      int nx = min_idx.x + dx;
+      int ny = min_idx.y + dy;
 
-      if (nx_ >= 0 && nx_ < static_cast<int>(map_info.width) &&
-          ny_ >= 0 && ny_ < static_cast<int>(map_info.height))
+      if (nx >= 0 && nx < static_cast<int>(map_info.width) &&
+          ny >= 0 && ny < static_cast<int>(map_info.height))
       {
-        val_ = getMapValue(nx_, ny_, edt_map);
-        if (val_ < 0.0f) continue;
-        diff_ = center_val_ - val_; // Positive if neighbor is smaller (descent)
-        if (diff_ > 0) {
-          dist_ = (dx != 0 && dy != 0) ? 1.41421356 : 1.0;
-          slope_ = diff_ / dist_;
-          if (slope_ > max_slope_) {
-            max_slope_ = slope_;
-            best_dx_ = dx;
-            best_dy_ = dy;
+        double val = getMapValue(nx, ny, edt_map);
+        if (val < 0.0f) continue;
+        double diff = center_val - val; // Positive if neighbor is smaller (descent)
+        if (diff > 0) {
+          double dist = (dx != 0 && dy != 0) ? 1.41421356 : 1.0;
+          double slope = diff / dist;
+          if (slope > max_slope) {
+            max_slope = slope;
+            best_dx = dx;
+            best_dy = dy;
           }
         }
       }
@@ -160,9 +162,10 @@ bool EdtGradientEstimator::getGrad(
   out_gradient_pose.pose.position.y = map_info.origin.position.y + (min_idx.y + 0.5) * map_info.resolution;
   out_gradient_pose.pose.position.z = 0.0;
 
-  yaw_ = std::atan2(static_cast<double>(best_dy_), static_cast<double>(best_dx_));
-  q_.setRPY(0, 0, yaw_ + M_PI); // Pointing towards steepest descent
-  out_gradient_pose.pose.orientation = tf2::toMsg(q_);
+  double yaw = std::atan2(static_cast<double>(best_dy), static_cast<double>(best_dx));
+  tf2::Quaternion q;
+  q.setRPY(0, 0, yaw + M_PI); // Pointing towards steepest descent
+  out_gradient_pose.pose.orientation = tf2::toMsg(q);
 
   return true;
 }
@@ -178,31 +181,31 @@ bool EdtGradientEstimator::getGrad(
   }
   
   // Calculate Gradient
-  center_val_ = getMapValue(min_idx.x, min_idx.y, edt_map);
-  best_dx_ = 0;
-  best_dy_ = 0;
-  max_slope_ = 0.0;
+  double center_val = getMapValue(min_idx.x, min_idx.y, edt_map);
+  int best_dx = 0;
+  int best_dy = 0;
+  double max_slope = 0.0;
 
   for (int dy = -1; dy <= 1; ++dy) {
     for (int dx = -1; dx <= 1; ++dx) {
       if (dx == 0 && dy == 0) continue;
       
-      nx_ = min_idx.x + dx;
-      ny_ = min_idx.y + dy;
+      int nx = min_idx.x + dx;
+      int ny = min_idx.y + dy;
 
-      if (nx_ >= 0 && nx_ < static_cast<int>(costmap->getSizeInCellsX()) &&
-          ny_ >= 0 && ny_ < static_cast<int>(costmap->getSizeInCellsY()))
+      if (nx >= 0 && nx < static_cast<int>(costmap->getSizeInCellsX()) &&
+          ny >= 0 && ny < static_cast<int>(costmap->getSizeInCellsY()))
       {
-        val_ = getMapValue(nx_, ny_, edt_map);
-        if (val_ < 0.0f) continue;
-        diff_ = center_val_ - val_; // Positive if neighbor is smaller (descent)
-        if (diff_ > 0) {
-          dist_ = (dx != 0 && dy != 0) ? 1.41421356 : 1.0;
-          slope_ = diff_ / dist_;
-          if (slope_ > max_slope_) {
-            max_slope_ = slope_;
-            best_dx_ = dx;
-            best_dy_ = dy;
+        double val = getMapValue(nx, ny, edt_map);
+        if (val < 0.0f) continue;
+        double diff = center_val - val; // Positive if neighbor is smaller (descent)
+        if (diff > 0) {
+          double dist = (dx != 0 && dy != 0) ? 1.41421356 : 1.0;
+          double slope = diff / dist;
+          if (slope > max_slope) {
+            max_slope = slope;
+            best_dx = dx;
+            best_dy = dy;
           }
         }
       }
@@ -217,9 +220,10 @@ bool EdtGradientEstimator::getGrad(
   out_gradient_pose.pose.position.y = costmap->getOriginY() + (min_idx.y + 0.5) * costmap->getResolution();
   out_gradient_pose.pose.position.z = 0.0;
 
-  yaw_ = std::atan2(static_cast<double>(best_dy_), static_cast<double>(best_dx_));
-  q_.setRPY(0, 0, yaw_ + M_PI); // Pointing towards steepest descent
-  out_gradient_pose.pose.orientation = tf2::toMsg(q_);
+  double yaw = std::atan2(static_cast<double>(best_dy), static_cast<double>(best_dx));
+  tf2::Quaternion q;
+  q.setRPY(0, 0, yaw + M_PI); // Pointing towards steepest descent
+  out_gradient_pose.pose.orientation = tf2::toMsg(q);
 
   return true;
 }

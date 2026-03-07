@@ -18,6 +18,7 @@
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include "angles/angles.h"
+#include <omp.h>
 
 namespace mppi::critics
 {
@@ -84,12 +85,12 @@ void CollisionAngleCritic::score(CriticData & data)
   const size_t batch_size = data.trajectories.x.shape(0);
   const size_t time_steps = data.trajectories.x.shape(1);
 
-  geometry_msgs::msg::Pose robot_pose;
-  geometry_msgs::msg::PoseStamped gradient_pose;
-  tf2::Quaternion q;
-
-  for (size_t i = 0; i < batch_size; ++i) {
+  #pragma omp parallel for
+  for (int i = 0; i < static_cast<int>(batch_size); ++i) {
     float trajectory_cost = 0.0f;
+    geometry_msgs::msg::Pose robot_pose;
+    geometry_msgs::msg::PoseStamped gradient_pose;
+    tf2::Quaternion q;
     // Iterate through time steps
     for (size_t t = 0; t < time_steps; ++t) {
       robot_pose.position.x = data.trajectories.x(i, t);
