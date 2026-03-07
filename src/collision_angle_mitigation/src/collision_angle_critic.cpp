@@ -90,8 +90,8 @@ void CollisionAngleCritic::score(CriticData & data)
 
   for (size_t i = 0; i < batch_size; ++i) {
     float trajectory_cost = 0.0f;
-    // Iterate up to time_steps - 1 to calculate velocity from position differences
-    for (size_t t = 0; t < time_steps - 1; ++t) {
+    // Iterate through time steps
+    for (size_t t = 0; t < time_steps; ++t) {
       robot_pose.position.x = data.trajectories.x(i, t);
       robot_pose.position.y = data.trajectories.y(i, t);
       double robot_yaw = data.trajectories.yaws(i, t);
@@ -106,16 +106,18 @@ void CollisionAngleCritic::score(CriticData & data)
           if (edt_estimator_->getGrad(edt_map, costmap, idx, gradient_pose)) {
             double grad_yaw = tf2::getYaw(gradient_pose.pose.orientation);
 
-            // Calculate velocity vector from trajectory points
-            float dx = data.trajectories.x(i, t + 1) - data.trajectories.x(i, t);
-            float dy = data.trajectories.y(i, t + 1) - data.trajectories.y(i, t);
+            // Calculate velocity vector from state (Robot Frame)
+            double vx = data.state.vx(i, t);
+            double vy = data.state.vy(i, t);
 
             double vel_yaw;
-            // If displacement is negligible, fallback to robot heading
-            if (std::hypot(dx, dy) < 1e-3) {
+            // If velocity is negligible, fallback to robot heading
+            if (std::hypot(vx, vy) < 1e-3) {
               vel_yaw = robot_yaw;
             } else {
-              vel_yaw = std::atan2(dy, dx);
+              // Convert robot-frame velocity to global-frame heading
+              // This is equivalent to rotating the vector (vx, vy) by robot_yaw
+              vel_yaw = robot_yaw + std::atan2(vy, vx);
             }
 
             double diff = angles::shortest_angular_distance(vel_yaw, grad_yaw);
