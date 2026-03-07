@@ -126,10 +126,12 @@ void CollisionAngleCritic::score(CriticData & data)
             // We want to penalize moving TOWARDS obstacle (Descent).
             // Alignment = 1.0 (Moving Away), -1.0 (Moving Towards)
             double alignment = std::cos(diff);
+            double dot_product = std::sqrt(std::pow(vx, 2) + std::pow(vy, 2)) * alignment;
 
             // TODO remove the false condition to enable penalization of moving towards obstacles. Currently left off for testing purposes.
+            // TODO : Change the actual cost function to work with the nav2 costs given according to collision etc
             if (alignment < 0.0 && false) {
-              trajectory_cost += weight_ * std::pow(-alignment, power_) * data.model_dt;
+              trajectory_cost += weight_ * std::pow(-dot_product, power_) * data.model_dt;
             }
             if (!latency_testing_) t = time_steps; // Break inner loop if we are within the threshold to save computation on this trajectory.
           }
