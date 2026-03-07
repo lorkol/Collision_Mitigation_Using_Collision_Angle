@@ -13,6 +13,9 @@
 // limitations under the License.
 
 #include "collision_angle_critic.hpp"
+#include "nav2_costmap_2d/costmap_2d_ros.hpp"
+#include "edt_gradient_estimator.hpp"
+
 
 namespace mppi::critics
 {
@@ -24,6 +27,13 @@ void CollisionAngleCritic::initialize()
 
   getParam(power_, "cost_power", 1);
   getParam(weight_, "cost_weight", 4.0f);
+
+  float radius;
+  // TODO: Get Robot Radius from parameters
+  getParam(radius, "robot_radius", 0.17f);
+
+  edt_estimator_ = std::make_unique<edt_gradient_estimator::EdtGradientEstimator>(radius);
+
   RCLCPP_INFO(
     logger_, "CollisionAngleCritic instantiated with %d power and %f weight.",
     power_, weight_);
@@ -36,6 +46,20 @@ void CollisionAngleCritic::initialize()
   const float min_sgn = vx_min > 0.0f ? 1.0f : -1.0f;
   max_vel_ = sqrtf(vx_max * vx_max + vy_max * vy_max);
   min_vel_ = min_sgn * sqrtf(vx_min * vx_min + vy_max * vy_max);
+
+  auto * layered_costmap = costmap_ros_->getLayeredCostmap();
+  auto plugins = layered_costmap->getPlugins();
+  for (auto plugin : *plugins) {
+    auto edt_layer = std::dynamic_pointer_cast<collision_angle_mitigation::EdtLayer>(plugin);
+    if (edt_layer) {
+      edt_layer_ = edt_layer.get();
+      break;
+    }
+  }
+
+  if (!edt_layer_) {
+    RCLCPP_WARN(logger_, "CollisionAngleCritic: EdtLayer not found in costmap. Ensure it is added to the plugins.");
+  }
 }
 
 void CollisionAngleCritic::score(CriticData & data)

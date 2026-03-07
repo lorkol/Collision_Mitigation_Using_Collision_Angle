@@ -18,6 +18,7 @@
 #include "nav2_mppi_controller/critic_function.hpp"
 #include "nav2_mppi_controller/models/state.hpp"
 #include "nav2_mppi_controller/tools/utils.hpp"
+#include "edt_layer.hpp"
 
 namespace mppi::critics
 {
@@ -49,6 +50,9 @@ protected:
   float weight_{0};
   float min_vel_;
   float max_vel_;
+  collision_angle_mitigation::EdtLayer * edt_layer_{nullptr};
+  // Polymorphic EDT Gradient Estimator which will have the option for different robot footprints.
+  std::unique_ptr<edt_gradient_estimator::EdtGradientEstimator> edt_estimator_;
 };
 
 }  // namespace mppi::critics
