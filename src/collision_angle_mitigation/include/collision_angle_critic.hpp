@@ -53,6 +53,10 @@ protected:
   collision_angle_mitigation::EdtLayer * edt_layer_{nullptr};
   // Polymorphic EDT Gradient Estimator which will have the option for different robot footprints.
   std::unique_ptr<edt_gradient_estimator::EdtGradientEstimator> edt_estimator_;
+
+// TODO: Remove this after testing latency to only have this critic work when colliding or near-colliding trajectories are present. Currently left on to allow for testing without needing to be near obstacles.
+private:
+  bool latency_testing_{true};
 };
 
 }  // namespace mppi::critics

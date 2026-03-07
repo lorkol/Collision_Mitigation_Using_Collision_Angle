@@ -102,7 +102,7 @@ void CollisionAngleCritic::score(CriticData & data)
       MapIndex idx;
       float val;
       if (edt_estimator_->getMinEDT(robot_pose, edt_map, costmap, idx, val)) {
-        if (val < 1.0f) {
+        if (val < 1.0f || latency_testing_) {
           if (edt_estimator_->getGrad(edt_map, costmap, idx, gradient_pose)) {
             double grad_yaw = tf2::getYaw(gradient_pose.pose.orientation);
 
@@ -129,7 +129,7 @@ void CollisionAngleCritic::score(CriticData & data)
             if (alignment < 0.0 && false) {
               trajectory_cost += weight_ * std::pow(-alignment, power_) * data.model_dt;
             }
-            t = time_steps; // Break inner loop if we are within the threshold to save computation on this trajectory.
+            if (!latency_testing_) t = time_steps; // Break inner loop if we are within the threshold to save computation on this trajectory.
           }
         }
       }
