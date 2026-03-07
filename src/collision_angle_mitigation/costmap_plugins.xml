@@ -1,0 +1,7 @@
+<class_libraries>
+  <library path="edt_layer">
+    <class type="collision_angle_mitigation::EdtLayer" base_class_type="nav2_costmap_2d::Layer">
+      <description>Calculates Euclidean Distance Transform in float precision</description>
+    </class>
+  </library>
+</class_libraries>

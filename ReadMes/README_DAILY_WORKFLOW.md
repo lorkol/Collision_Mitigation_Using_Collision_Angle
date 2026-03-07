@@ -15,7 +15,7 @@ source install/setup.bash
 
 Set the model to Waffle and launch the bringup:
 ```bash
-ros2 launch nav2_bringup tb3_simulation_launch.py headless:=False
+ros2 launch collision_angle_mitigation circular_simulation_launch.py headless:=False
 ```
 
 ## 3. Initialize RViz
@@ -59,9 +59,19 @@ docker exec -it 50a1c7276078 bash
 Then in the container run
 ```bash
 source /opt/ros/jazzy/setup.bash
-source ~/ros2_ws/install/setup.bash
+source /ros2_ws/install/setup.bash
 ``` 
+# While working on EDT:
+keep building using:
+```bash
+colcon build --packages-select collision_angle_mitigation --parallel-workers 2
+```
 
+Running the node:
+```bash
+source install/setup.bash
+ros2 run collision_angle_mitigation edt_publisher_node
+```
 
 # Misc
 Make sure when opening and connecting to VSCode to download the c/c++ and IntelliJ extensions
