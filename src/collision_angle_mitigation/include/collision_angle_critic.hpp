@@ -19,6 +19,7 @@
 #include "nav2_mppi_controller/models/state.hpp"
 #include "nav2_mppi_controller/tools/utils.hpp"
 #include "edt_layer.hpp"
+#include "edt_gradient_estimator.hpp"
 
 namespace mppi::critics
 {

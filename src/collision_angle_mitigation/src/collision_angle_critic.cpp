@@ -14,7 +14,6 @@
 
 #include "collision_angle_critic.hpp"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
-#include "edt_gradient_estimator.hpp"
 #include <tf2/utils.h>
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include "angles/angles.h"
