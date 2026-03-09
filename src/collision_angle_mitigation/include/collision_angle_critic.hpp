@@ -54,6 +54,11 @@ protected:
   collision_angle_mitigation::EdtLayer * edt_layer_{nullptr};
   // Polymorphic EDT Gradient Estimator which will have the option for different robot footprints.
   std::unique_ptr<edt_gradient_estimator::EdtGradientEstimator> edt_estimator_;
+  
+  // Gradient Cache
+  std::vector<float> grad_cache_val_;
+  std::vector<float> grad_cache_yaw_;
+  std::vector<uint8_t> grad_cache_flag_; // 0: Unknown, 1: Valid, 2: Invalid
 
 // TODO: Remove this after testing latency to only have this critic work when colliding or near-colliding trajectories are present. Currently left on to allow for testing without needing to be near obstacles.
 private:

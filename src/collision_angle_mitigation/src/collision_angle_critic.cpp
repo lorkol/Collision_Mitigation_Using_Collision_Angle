@@ -18,6 +18,7 @@
 #include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
 #include "angles/angles.h"
 #include <omp.h>
+#include <cstring>
 
 namespace mppi::critics
 {
@@ -79,6 +80,16 @@ void CollisionAngleCritic::score(CriticData & data)
   // Get Map Metadata
   auto * costmap = edt_layer_->getCostmap();
 
+  unsigned int size_x = costmap->getSizeInCellsX();
+  unsigned int size_y = costmap->getSizeInCellsY();
+  size_t total_cells = size_x * size_y;
+
+  if (grad_cache_flag_.size() != total_cells) {
+    grad_cache_val_.resize(total_cells);
+    grad_cache_yaw_.resize(total_cells);
+    grad_cache_flag_.resize(total_cells);
+  }
+  std::memset(grad_cache_flag_.data(), 0, total_cells * sizeof(uint8_t));
 
   // Extract trajectory and state tensors for xtensor operations
   const size_t batch_size = data.trajectories.x.shape(0);
@@ -99,12 +110,45 @@ void CollisionAngleCritic::score(CriticData & data)
       q.setRPY(0, 0, robot_yaw);
       robot_pose.orientation = tf2::toMsg(q);
 
-      MapIndex idx;
-      float val;
-      if (edt_estimator_->getMinEDT(robot_pose, edt_map, costmap, idx, val)) {
-        if (val < 1.0f || latency_testing_) {
-          if (edt_estimator_->getGrad(edt_map, costmap, idx, gradient_pose)) {
-            double grad_yaw = tf2::getYaw(gradient_pose.pose.orientation);
+      unsigned int mx, my;
+      if (costmap->worldToMap(robot_pose.position.x, robot_pose.position.y, mx, my)) {
+        unsigned int index = my * size_x + mx;
+        
+        // Atomic load with acquire to ensure we see data written before the flag
+        uint8_t flag = __atomic_load_n(&grad_cache_flag_[index], __ATOMIC_ACQUIRE);
+        
+        float val;
+        double grad_yaw;
+        bool has_grad = false;
+
+        if (flag == 1) {
+          val = grad_cache_val_[index];
+          grad_yaw = grad_cache_yaw_[index];
+          has_grad = true;
+        } else if (flag == 0) {
+          // Not computed yet
+          MapIndex idx;
+          if (edt_estimator_->getMinEDT(robot_pose, edt_map, costmap, idx, val)) {
+            if (val < 1.0f || latency_testing_) {
+              if (edt_estimator_->getGrad(edt_map, costmap, idx, gradient_pose)) {
+                grad_yaw = tf2::getYaw(gradient_pose.pose.orientation);
+                
+                grad_cache_val_[index] = val;
+                grad_cache_yaw_[index] = static_cast<float>(grad_yaw);
+                // Atomic store with release to ensure data is visible before flag is set
+                __atomic_store_n(&grad_cache_flag_[index], 1, __ATOMIC_RELEASE);
+                has_grad = true;
+              }
+            }
+          }
+          if (!has_grad) {
+            // Mark as invalid/no-grad so other threads don't recompute
+            __atomic_store_n(&grad_cache_flag_[index], 2, __ATOMIC_RELEASE);
+          }
+        }
+        // If flag == 2, we skip (has_grad remains false)
+
+        if (has_grad) {
 
             // Calculate velocity vector from state (Robot Frame)
             double vx = data.state.vx(i, t);
@@ -134,7 +178,6 @@ void CollisionAngleCritic::score(CriticData & data)
               trajectory_cost += weight_ * std::pow(-dot_product, power_) * data.model_dt;
             }
             if (!latency_testing_) t = time_steps; // Break inner loop if we are within the threshold to save computation on this trajectory.
-          }
         }
       }
     }
