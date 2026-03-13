@@ -153,6 +153,7 @@ void Optimizer::reset(bool reset_dynamic_speed_limits)
 
   noise_generator_.reset(settings_, isHolonomic());
   motion_model_->initialize(settings_.constraints, settings_.model_dt);
+  critic_manager_.setEmergencyMode(false);
 
   RCLCPP_INFO(logger_, "Optimizer reset");
 }

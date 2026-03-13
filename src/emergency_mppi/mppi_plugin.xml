@@ -1,3 +1,4 @@
+<class_libraries>
 <library path="emergency_mppi_lib">
   <class name="emergency_mppi/EmergencyMPPIController" type="emergency_mppi::MPPIController" base_class_type="nav2_core::Controller">
     <description>
@@ -5,4 +6,38 @@
       Ensures 0 velocity command if all trajectories are in collision.
     </description>
   </class>
+  <class name="emergency_mppi::critics::ConstraintCritic" type="emergency_mppi::critics::ConstraintCritic" base_class_type="emergency_mppi::critics::CriticFunction">
+    <description>Penalizes trajectories violating constraints</description>
+  </class>
+  <class name="emergency_mppi::critics::ObstaclesCritic" type="emergency_mppi::critics::ObstaclesCritic" base_class_type="emergency_mppi::critics::CriticFunction">
+    <description>mppi critic for obstacle avoidance</description>
+  </class>
+  <class name="emergency_mppi::critics::CostCritic" type="emergency_mppi::critics::CostCritic" base_class_type="emergency_mppi::critics::CriticFunction">
+    <description>mppi critic for obstacle avoidance using costmap score</description>
+  </class>
+  <class name="emergency_mppi::critics::GoalCritic" type="emergency_mppi::critics::GoalCritic" base_class_type="emergency_mppi::critics::CriticFunction">
+    <description>mppi critic for driving towards the goal</description>
+  </class>
+  <class name="emergency_mppi::critics::GoalAngleCritic" type="emergency_mppi::critics::GoalAngleCritic" base_class_type="emergency_mppi::critics::CriticFunction">
+    <description>mppi critic for achieving the goal heading angle</description>
+  </class>
+  <class name="emergency_mppi::critics::PathAlignCritic" type="emergency_mppi::critics::PathAlignCritic" base_class_type="emergency_mppi::critics::CriticFunction">
+    <description>mppi critic for aligning to path</description>
+  </class>
+  <class name="emergency_mppi::critics::PathAngleCritic" type="emergency_mppi::critics::PathAngleCritic" base_class_type="emergency_mppi::critics::CriticFunction">
+    <description>mppi critic for tracking the path in the correct heading</description>
+  </class>
+  <class name="emergency_mppi::critics::PathFollowCritic" type="emergency_mppi::critics::PathFollowCritic" base_class_type="emergency_mppi::critics::CriticFunction">
+    <description>mppi critic for driving towards the goal that is furthest among trajectories nearest path points</description>
+  </class>
+  <class name="emergency_mppi::critics::PreferForwardCritic" type="emergency_mppi::critics::PreferForwardCritic" base_class_type="emergency_mppi::critics::CriticFunction">
+    <description>mppi critic for preferring forward motion</description>
+  </class>
+  <class name="emergency_mppi::critics::TwirlingCritic" type="emergency_mppi::critics::TwirlingCritic" base_class_type="emergency_mppi::critics::CriticFunction">
+    <description>mppi critic for preventing twirling behavior when using omnidirectional models</description>
+  </class>
+  <class name="emergency_mppi::critics::VelocityDeadbandCritic" type="emergency_mppi::critics::VelocityDeadbandCritic" base_class_type="emergency_mppi::critics::CriticFunction">
+    <description>mppi critic for restricting command velocities in deadband range</description>
+  </class>
 </library>
+</class_libraries>

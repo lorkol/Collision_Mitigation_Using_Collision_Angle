@@ -74,6 +74,7 @@ endif()
 
 # Register the plugin file so ROS knows about it
 pluginlib_export_plugin_description_file(nav2_core mppi_plugin.xml)
+pluginlib_export_plugin_description_file(emergency_mppi mppi_plugin.xml)
 
 # Install rules
 install(TARGETS emergency_mppi_lib
