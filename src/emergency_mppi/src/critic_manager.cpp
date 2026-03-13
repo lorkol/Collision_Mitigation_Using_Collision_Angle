@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_mppi_controller/critic_manager.hpp"
+#include "emergency_mppi/critic_manager.hpp"
 
 namespace emergency_mppi
 {
@@ -44,7 +44,7 @@ void CriticManager::loadCritics()
 {
   if (!loader_) {
     loader_ = std::make_unique<pluginlib::ClassLoader<critics::CriticFunction>>(
-      "nav2_mppi_controller", "mppi::critics::CriticFunction");
+      "emergency_mppi", "emergency_mppi::critics::CriticFunction");
   }
 
   critics_.clear();
@@ -74,7 +74,7 @@ void CriticManager::loadCritics()
 
 std::string CriticManager::getFullName(const std::string & name)
 {
-  return "mppi::critics::" + name;
+  return "emergency_mppi::critics::" + name;
 }
 
 void CriticManager::setEmergencyMode(bool enabled)

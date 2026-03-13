@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_mppi_controller/critics/path_follow_critic.hpp"
+#include "emergency_mppi/critics/path_follow_critic.hpp"
 
 #include <xtensor/xmath.hpp>
 #include <xtensor/xsort.hpp>
@@ -75,5 +75,5 @@ void PathFollowCritic::score(CriticData & data)
 #include <pluginlib/class_list_macros.hpp>
 
 PLUGINLIB_EXPORT_CLASS(
-  mppi::critics::PathFollowCritic,
-  mppi::critics::CriticFunction)
+  emergency_mppi::critics::PathFollowCritic,
+  emergency_mppi::critics::CriticFunction)

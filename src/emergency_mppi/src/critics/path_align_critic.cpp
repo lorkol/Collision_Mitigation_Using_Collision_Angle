@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_mppi_controller/critics/path_align_critic.hpp"
+#include "emergency_mppi/critics/path_align_critic.hpp"
 
 namespace emergency_mppi::critics
 {
@@ -36,7 +36,7 @@ void PathAlignCritic::initialize()
 
   RCLCPP_INFO(
     logger_,
-    "ReferenceTrajectoryCritic instantiated with %d power and %f weight",
+    "PathAlignCritic instantiated with %d power and %f weight",
     power_, weight_);
 }
 
@@ -162,5 +162,5 @@ void PathAlignCritic::score(CriticData & data)
 #include <pluginlib/class_list_macros.hpp>
 
 PLUGINLIB_EXPORT_CLASS(
-  mppi::critics::PathAlignCritic,
-  mppi::critics::CriticFunction)
+  emergency_mppi::critics::PathAlignCritic,
+  emergency_mppi::critics::CriticFunction)

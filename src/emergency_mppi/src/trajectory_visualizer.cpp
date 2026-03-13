@@ -13,7 +13,7 @@
 // limitations under the License.
 
 #include <memory>
-#include "nav2_mppi_controller/tools/trajectory_visualizer.hpp"
+#include "emergency_mppi/tools/trajectory_visualizer.hpp"
 
 namespace emergency_mppi
 {

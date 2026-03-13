@@ -61,9 +61,9 @@ ament_target_dependencies(emergency_mppi_lib ${dependencies})
 
 # Link OpenMP and Xtensor
 if(OpenMP_FOUND)
-  target_link_libraries(emergency_mppi_lib PUBLIC OpenMP::OpenMP_CXX)
+  target_link_libraries(emergency_mppi_lib OpenMP::OpenMP_CXX)
 endif()
-target_link_libraries(emergency_mppi_lib PUBLIC xtensor xsimd)
+target_link_libraries(emergency_mppi_lib xtensor xsimd)
 
 # Optimization flags often used with MPPI/Xtensor
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")

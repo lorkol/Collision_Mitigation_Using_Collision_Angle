@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_mppi_controller/tools/parameters_handler.hpp"
+#include "emergency_mppi/tools/parameters_handler.hpp"
 
 namespace emergency_mppi
 {

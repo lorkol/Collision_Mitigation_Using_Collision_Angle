@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_mppi_controller/critics/prefer_forward_critic.hpp"
+#include "emergency_mppi/critics/prefer_forward_critic.hpp"
 
 namespace emergency_mppi::critics
 {
@@ -55,5 +55,5 @@ void PreferForwardCritic::score(CriticData & data)
 #include <pluginlib/class_list_macros.hpp>
 
 PLUGINLIB_EXPORT_CLASS(
-  mppi::critics::PreferForwardCritic,
-  mppi::critics::CriticFunction)
+  emergency_mppi::critics::PreferForwardCritic,
+  emergency_mppi::critics::CriticFunction)

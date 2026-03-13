@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_mppi_controller/critics/constraint_critic.hpp"
+#include "emergency_mppi/critics/constraint_critic.hpp"
 
 namespace emergency_mppi::critics
 {
@@ -117,4 +117,4 @@ void ConstraintCritic::score(CriticData & data)
 
 #include <pluginlib/class_list_macros.hpp>
 
-PLUGINLIB_EXPORT_CLASS(mppi::critics::ConstraintCritic, mppi::critics::CriticFunction)
+PLUGINLIB_EXPORT_CLASS(emergency_mppi::critics::ConstraintCritic, emergency_mppi::critics::CriticFunction)

@@ -189,4 +189,4 @@ void CollisionAngleCritic::score(CriticData & data)
 
 #include <pluginlib/class_list_macros.hpp>
 
-PLUGINLIB_EXPORT_CLASS(mppi::critics::CollisionAngleCritic, mppi::critics::CriticFunction)
+PLUGINLIB_EXPORT_CLASS(emergency_mppi::critics::CollisionAngleCritic, emergency_mppi::critics::CriticFunction)

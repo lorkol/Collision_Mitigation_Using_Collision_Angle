@@ -1,7 +1,7 @@
 <library path="collision_angle_critic_lib">
   <class name="collision_angle_optimizer/CollisionAngleCritic" 
          type="collision_angle_optimizer::CollisionAngleCritic" 
-         base_class_type="mppi::CriticFunction">
+         base_class_type="emergency_mppi::CriticFunction">
     <description>
       A custom MPPI critic that optimizes the angle of collision with obstacles to mitigate impact.
     </description>

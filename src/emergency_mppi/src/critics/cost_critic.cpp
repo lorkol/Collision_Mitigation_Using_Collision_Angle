@@ -14,7 +14,7 @@
 // limitations under the License.
 
 #include <cmath>
-#include "nav2_mppi_controller/critics/cost_critic.hpp"
+#include "emergency_mppi/critics/cost_critic.hpp"
 #include "nav2_core/controller_exceptions.hpp"
 
 namespace emergency_mppi::critics
@@ -223,5 +223,5 @@ void CostCritic::score(CriticData & data)
 #include <pluginlib/class_list_macros.hpp>
 
 PLUGINLIB_EXPORT_CLASS(
-  mppi::critics::CostCritic,
-  mppi::critics::CriticFunction)
+  emergency_mppi::critics::CostCritic,
+  emergency_mppi::critics::CriticFunction)

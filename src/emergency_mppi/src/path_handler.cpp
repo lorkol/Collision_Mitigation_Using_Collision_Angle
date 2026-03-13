@@ -14,8 +14,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_mppi_controller/tools/path_handler.hpp"
-#include "nav2_mppi_controller/tools/utils.hpp"
+#include "emergency_mppi/tools/path_handler.hpp"
+#include "emergency_mppi/tools/utils.hpp"
 #include "nav2_costmap_2d/costmap_2d_ros.hpp"
 
 namespace emergency_mppi

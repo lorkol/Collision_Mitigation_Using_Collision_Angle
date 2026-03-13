@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_mppi_controller/critics/goal_angle_critic.hpp"
+#include "emergency_mppi/critics/goal_angle_critic.hpp"
 #include "angles/angles.h"
 namespace emergency_mppi::critics
 {
@@ -70,5 +70,5 @@ void GoalAngleCritic::score(CriticData & data)
 #include <pluginlib/class_list_macros.hpp>
 
 PLUGINLIB_EXPORT_CLASS(
-  mppi::critics::GoalAngleCritic,
-  mppi::critics::CriticFunction)
+  emergency_mppi::critics::GoalAngleCritic,
+  emergency_mppi::critics::CriticFunction)

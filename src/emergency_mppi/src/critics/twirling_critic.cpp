@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "nav2_mppi_controller/critics/twirling_critic.hpp"
+#include "emergency_mppi/critics/twirling_critic.hpp"
 
 namespace emergency_mppi::critics
 {
@@ -49,5 +49,5 @@ void TwirlingCritic::score(CriticData & data)
 #include <pluginlib/class_list_macros.hpp>
 
 PLUGINLIB_EXPORT_CLASS(
-  mppi::critics::TwirlingCritic,
-  mppi::critics::CriticFunction)
+  emergency_mppi::critics::TwirlingCritic,
+  emergency_mppi::critics::CriticFunction)

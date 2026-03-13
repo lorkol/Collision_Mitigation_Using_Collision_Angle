@@ -14,7 +14,7 @@
 // limitations under the License.
 
 #include <cmath>
-#include "nav2_mppi_controller/critics/obstacles_critic.hpp"
+#include "emergency_mppi/critics/obstacles_critic.hpp"
 #include "nav2_costmap_2d/inflation_layer.hpp"
 #include "nav2_core/controller_exceptions.hpp"
 
@@ -247,5 +247,5 @@ CollisionCost ObstaclesCritic::costAtPose(float x, float y, float theta)
 #include <pluginlib/class_list_macros.hpp>
 
 PLUGINLIB_EXPORT_CLASS(
-  mppi::critics::ObstaclesCritic,
-  mppi::critics::CriticFunction)
+  emergency_mppi::critics::ObstaclesCritic,
+  emergency_mppi::critics::CriticFunction)

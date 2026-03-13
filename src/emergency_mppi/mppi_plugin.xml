@@ -1,5 +1,5 @@
 <library path="emergency_mppi_lib">
-  <class name="emergency_mppi/EmergencyMPPIController" type="emergency_mppi::Controller" base_class_type="nav2_core::Controller">
+  <class name="emergency_mppi/EmergencyMPPIController" type="emergency_mppi::MPPIController" base_class_type="nav2_core::Controller">
     <description>
       Modified MPPI Controller with Emergency Stop logic and critic switching.
       Ensures 0 velocity command if all trajectories are in collision.
