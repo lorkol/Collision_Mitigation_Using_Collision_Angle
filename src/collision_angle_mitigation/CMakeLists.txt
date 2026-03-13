@@ -13,7 +13,7 @@ endif()
 # Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(nav2_mppi_controller REQUIRED)
+find_package(emergency_mppi REQUIRED)
 find_package(nav2_core REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rcl_interfaces REQUIRED)
@@ -98,7 +98,7 @@ target_include_directories(collision_angle_critic PUBLIC
   $<INSTALL_INTERFACE:include>)
 ament_target_dependencies(collision_angle_critic
   rclcpp
-  nav2_mppi_controller
+  emergency_mppi
   nav2_core
   pluginlib
   nav2_costmap_2d
@@ -108,7 +108,7 @@ ament_target_dependencies(collision_angle_critic
 if(OpenMP_CXX_FOUND)
   target_link_libraries(collision_angle_critic OpenMP::OpenMP_CXX)
 endif()
-target_link_libraries(collision_angle_critic collision_mitigation_utils)
+target_link_libraries(collision_angle_critic collision_mitigation_utils emergency_mppi::emergency_mppi_lib)
 
 # Install library and executable
 install(TARGETS
@@ -130,7 +130,7 @@ install(
 install(
   FILES plugins.xml costmap_plugins.xml
   DESTINATION share/${PROJECT_NAME})
-pluginlib_export_plugin_description_file(nav2_mppi_controller plugins.xml)
+pluginlib_export_plugin_description_file(emergency_mppi plugins.xml)
 pluginlib_export_plugin_description_file(nav2_costmap_2d costmap_plugins.xml)
 
 if(BUILD_TESTING)

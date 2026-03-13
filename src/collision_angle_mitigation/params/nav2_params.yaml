@@ -95,7 +95,8 @@ controller_server:
       xy_goal_tolerance: 0.25
       yaw_goal_tolerance: 0.25
     FollowPath:
-      plugin: "nav2_mppi_controller::MPPIController"
+      plugin: "emergency_mppi/EmergencyMPPIController"
+      collision_cost: 100000.0 
       time_steps: 56
       model_dt: 0.05
       batch_size: 2000

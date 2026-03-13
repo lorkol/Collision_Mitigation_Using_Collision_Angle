@@ -56,7 +56,10 @@ set(dependencies
 file(GLOB_RECURSE SOURCES src/*.cpp)
 
 add_library(emergency_mppi_lib SHARED ${SOURCES})
-target_include_directories(emergency_mppi_lib PUBLIC include)
+target_include_directories(emergency_mppi_lib PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>
+)
 ament_target_dependencies(emergency_mppi_lib ${dependencies})
 
 # Link OpenMP and Xtensor
@@ -64,7 +67,6 @@ if(OpenMP_FOUND)
   target_link_libraries(emergency_mppi_lib OpenMP::OpenMP_CXX)
 endif()
 target_link_libraries(emergency_mppi_lib xtensor xsimd)
-
 # Optimization flags often used with MPPI/Xtensor
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
   target_compile_options(emergency_mppi_lib PRIVATE -march=native -mavx2)
@@ -75,6 +77,7 @@ pluginlib_export_plugin_description_file(nav2_core mppi_plugin.xml)
 
 # Install rules
 install(TARGETS emergency_mppi_lib
+  EXPORT emergency_mppi_lib_targets
   ARCHIVE DESTINATION lib
   LIBRARY DESTINATION lib
   RUNTIME DESTINATION bin
@@ -87,5 +90,14 @@ install(DIRECTORY include/
 install(FILES mppi_plugin.xml
   DESTINATION share/${PROJECT_NAME}
 )
+
+install(EXPORT emergency_mppi_lib_targets
+  FILE emergency_mppi_lib_targets.cmake
+  NAMESPACE emergency_mppi::
+  DESTINATION share/${PROJECT_NAME}/cmake
+)
+
+ament_export_targets(emergency_mppi_lib_targets HAS_LIBRARY_TARGET)
+ament_export_dependencies(${dependencies} xtensor OpenMP)
 
 ament_package()
