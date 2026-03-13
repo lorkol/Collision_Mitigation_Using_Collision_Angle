@@ -86,6 +86,7 @@ void Optimizer::getParams()
   getParam(s.sampling_std.vy, "vy_std", 0.2f);
   getParam(s.sampling_std.wz, "wz_std", 0.4f);
   getParam(s.retry_attempt_limit, "retry_attempt_limit", 1);
+  getParam(emergency_collision_cost_, "collision_cost", 100000.0f);
 
   s.base_constraints.ax_max = std::abs(s.base_constraints.ax_max);
   if (s.base_constraints.ax_min > 0.0) {
@@ -187,8 +188,29 @@ geometry_msgs::msg::TwistStamped Optimizer::evalControl(
 void Optimizer::optimize()
 {
   for (size_t i = 0; i < settings_.iteration_count; ++i) {
-    generateNoisedTrajectories();
-    critic_manager_.evalTrajectoriesScores(critics_data_);
+    
+    // 1. Normal Mode Evaluation
+    if(!critic_manager_.getEmergencyMode()) {
+      generateNoisedTrajectories();
+      critic_manager_.evalTrajectoriesScores(critics_data_);
+
+      // 2. Check for Total Collision
+      // If the best trajectory cost is extremely high, we assume all valid paths are blocked.
+      if (xt::amin(costs_)() >= emergency_collision_cost_) {
+        critic_manager_.setEmergencyMode(true);
+      }
+    }
+    //Run this if it was true from the start OR if it just became true from the normal mode evaluation
+    if(critic_manager_.getEmergencyMode()){
+      control_sequence_.vx.fill(0.0);
+      control_sequence_.wz.fill(0.0);
+      if (isHolonomic()) {
+        control_sequence_.vy.fill(0.0);
+      }
+      generateNoisedTrajectories();
+      critic_manager_.evalTrajectoriesScores(critics_data_);
+    }
+
     updateControlSequence();
   }
 }

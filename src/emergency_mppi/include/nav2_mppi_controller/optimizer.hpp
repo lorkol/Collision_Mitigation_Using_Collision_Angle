@@ -267,6 +267,8 @@ protected:
     std::nullopt, std::nullopt};  /// Caution, keep references
 
   rclcpp::Logger logger_{rclcpp::get_logger("MPPIController")};
+
+  float emergency_collision_cost_;
 };
 
 }  // namespace emergency_mppi
