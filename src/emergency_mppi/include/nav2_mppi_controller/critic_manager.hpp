@@ -77,6 +77,9 @@ public:
     */
   void evalTrajectoriesScores(CriticData & data) const;
 
+  void setEmergencyMode(bool enabled);
+  bool getEmergencyMode() const;
+
 protected:
   /**
     * @brief Get parameters (critics to load)
@@ -100,8 +103,11 @@ protected:
 
   ParametersHandler * parameters_handler_;
   std::vector<std::string> critic_names_;
+  std::vector<std::string> emergency_critic_names_;
   std::unique_ptr<pluginlib::ClassLoader<critics::CriticFunction>> loader_;
   Critics critics_;
+  Critics emergency_critics_;
+  bool emergency_mode_ = false;
 
   rclcpp::Logger logger_{rclcpp::get_logger("MPPIController")};
 };

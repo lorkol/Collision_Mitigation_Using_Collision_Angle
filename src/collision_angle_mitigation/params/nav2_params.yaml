@@ -127,7 +127,9 @@ controller_server:
       critics: [
         "ConstraintCritic", "CostCritic", "GoalCritic",
         "GoalAngleCritic", "PathAlignCritic", "PathFollowCritic",
-        "PathAngleCritic", "PreferForwardCritic", "CollisionAngleCritic"]
+        "PathAngleCritic", "PreferForwardCritic"]
+      emergency_critics: [
+        "ConstraintCritic", "CostCritic", "CollisionAngleCritic"]
       ConstraintCritic:
         enabled: true
         cost_power: 1

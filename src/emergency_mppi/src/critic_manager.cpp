@@ -37,6 +37,7 @@ void CriticManager::getParams()
   auto node = parent_.lock();
   auto getParam = parameters_handler_->getParamGetter(name_);
   getParam(critic_names_, "critics", std::vector<std::string>{}, ParameterType::Static);
+  getParam(emergency_critic_names_, "emergency_critics", std::vector<std::string>{}, ParameterType::Static);
 }
 
 void CriticManager::loadCritics()
@@ -57,6 +58,18 @@ void CriticManager::loadCritics()
       parameters_handler_);
     RCLCPP_INFO(logger_, "Critic loaded : %s", fullname.c_str());
   }
+
+  emergency_critics_.clear();
+  for (auto name : emergency_critic_names_) {
+    std::string fullname = getFullName(name);
+    auto instance = std::unique_ptr<critics::CriticFunction>(
+      loader_->createUnmanagedInstance(fullname));
+    emergency_critics_.push_back(std::move(instance));
+    emergency_critics_.back()->on_configure(
+      parent_, name_, name_ + "." + name, costmap_ros_,
+      parameters_handler_);
+    RCLCPP_INFO(logger_, "Emergency Critic loaded : %s", fullname.c_str());
+  }
 }
 
 std::string CriticManager::getFullName(const std::string & name)
@@ -64,10 +77,21 @@ std::string CriticManager::getFullName(const std::string & name)
   return "mppi::critics::" + name;
 }
 
+void CriticManager::setEmergencyMode(bool enabled)
+{
+  emergency_mode_ = enabled;
+}
+
+bool CriticManager::getEmergencyMode() const
+{
+  return emergency_mode_;
+}
+
 void CriticManager::evalTrajectoriesScores(
   CriticData & data) const
 {
-  for (const auto & critic : critics_) {
+  const auto & active_critics = emergency_mode_ ? emergency_critics_ : critics_;
+  for (const auto & critic : active_critics) {
     if (data.fail_flag) {
       break;
     }
