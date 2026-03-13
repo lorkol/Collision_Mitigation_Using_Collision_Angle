@@ -12,23 +12,21 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#ifndef NAV2_MPPI_CONTROLLER__CRITICS__COLLISION_ANGLE_CRITIC_HPP_
-#define NAV2_MPPI_CONTROLLER__CRITICS__COLLISION_ANGLE_CRITIC_HPP_
+#ifndef NAV2_MPPI_CONTROLLER__CRITICS__CONSTRAINT_CRITIC_HPP_
+#define NAV2_MPPI_CONTROLLER__CRITICS__CONSTRAINT_CRITIC_HPP_
 
 #include "nav2_mppi_controller/critic_function.hpp"
 #include "nav2_mppi_controller/models/state.hpp"
 #include "nav2_mppi_controller/tools/utils.hpp"
-#include "edt_layer.hpp"
-#include "edt_gradient_estimator.hpp"
 
 namespace emergency_mppi::critics
 {
 
 /**
- * @class mppi::critics::CollisionAngleCritic
- * @brief Critic objective function for giving different collision angles, different costs.
+ * @class mppi::critics::ConstraintCritic
+ * @brief Critic objective function for enforcing feasible constraints
  */
-class CollisionAngleCritic : public CriticFunction
+class ConstraintCritic : public CriticFunction
 {
 public:
   /**
@@ -51,20 +49,8 @@ protected:
   float weight_{0};
   float min_vel_;
   float max_vel_;
-  collision_angle_mitigation::EdtLayer * edt_layer_{nullptr};
-  // Polymorphic EDT Gradient Estimator which will have the option for different robot footprints.
-  std::unique_ptr<edt_gradient_estimator::EdtGradientEstimator> edt_estimator_;
-  
-  // Gradient Cache
-  std::vector<float> grad_cache_val_;
-  std::vector<float> grad_cache_yaw_;
-  std::vector<uint8_t> grad_cache_flag_; // 0: Unknown, 1: Valid, 2: Invalid
-
-// TODO: Remove this after testing latency to only have this critic work when colliding or near-colliding trajectories are present. Currently left on to allow for testing without needing to be near obstacles.
-private:
-  bool latency_testing_{true};
 };
 
 }  // namespace emergency_mppi::critics
 
-#endif  // NAV2_MPPI_CONTROLLER__CRITICS__COLLISION_ANGLE_CRITIC_HPP_
+#endif  // NAV2_MPPI_CONTROLLER__CRITICS__CONSTRAINT_CRITIC_HPP_

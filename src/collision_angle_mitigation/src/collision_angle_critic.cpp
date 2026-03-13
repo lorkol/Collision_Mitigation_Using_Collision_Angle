@@ -20,7 +20,7 @@
 #include <omp.h>
 #include <cstring>
 
-namespace mppi::critics
+namespace emergency_mppi::critics
 {
 
 void CollisionAngleCritic::initialize()
@@ -185,7 +185,7 @@ void CollisionAngleCritic::score(CriticData & data)
   }
 }
 
-}  // namespace mppi::critics
+}  // namespace emergency_mppi::critics
 
 #include <pluginlib/class_list_macros.hpp>
 
