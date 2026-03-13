@@ -189,15 +189,17 @@ geometry_msgs::msg::TwistStamped Optimizer::evalControl(
 void Optimizer::optimize()
 {
   for (size_t i = 0; i < settings_.iteration_count; ++i) {
-    
     // 1. Normal Mode Evaluation
     if(!critic_manager_.getEmergencyMode()) {
       generateNoisedTrajectories();
       critic_manager_.evalTrajectoriesScores(critics_data_);
 
+      float min_cost = xt::amin(costs_)();
+
       // 2. Check for Total Collision
       // If the best trajectory cost is extremely high, we assume all valid paths are blocked.
-      if (xt::amin(costs_)() >= emergency_collision_cost_) {
+      if (min_cost >= emergency_collision_cost_) {
+        RCLCPP_WARN(logger_, "MPPI: Entering EMERGENCY MODE! All trajectory costs >= threshold (%f >= %f)", min_cost, emergency_collision_cost_);
         critic_manager_.setEmergencyMode(true);
       }
     }
