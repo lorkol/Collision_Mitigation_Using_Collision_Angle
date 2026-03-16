@@ -2,8 +2,8 @@
 set -e  # Exit immediately if a command fails
 
 # 1. Define Paths
-INPUT_DIR="/ros2_ws/src/Mobile-Robot-Collision/src/Collision_Angle_Mitigation/models/URDFs"
-OUTPUT_DIR="/ros2_ws/src/Mobile-Robot-Collision/src/Collision_Angle_Mitigation/models"
+INPUT_DIR="/ros2_ws/src/Mobile-Robot-Collision/src/collision_angle_mitigation/models/URDFs"
+OUTPUT_DIR="/ros2_ws/src/Mobile-Robot-Collision/src/collision_angle_mitigation/models"
 SYSTEM_MESH_PATH="/opt/ros/jazzy/share/turtlebot3_description"
 
 mkdir -p "$OUTPUT_DIR"

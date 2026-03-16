@@ -51,7 +51,7 @@ COPY . /ros2_ws/src/Mobile-Robot-Collision
 
 # Install EVERY dependency your source code needs (e.g., test-msgs, geographic-msgs)
 RUN apt-get update && \
-    rosdep install --from-paths src --ignore-src -y -r && \
+    rosdep install --from-paths src/Mobile-Robot-Collision/src --ignore-src -y -r && \
     rm -rf /var/lib/apt/lists/*
 
 # Create a robust entrypoint for automated sourcing
