@@ -35,3 +35,14 @@ else
         --volume="$(pwd)/log:/ros2_ws/log" \
         $IMAGE_NAME
 fi
+
+
+#!/bin/bash
+# Source the main ROS 2 installation
+source /opt/ros/jazzy/setup.bash
+
+# Source your workspace if it exists
+if [ -f "/ros2_ws/install/setup.bash" ]; then
+    source /ros2_ws/install/setup.bash
+    echo "Workspace sourced successfully."
+fi

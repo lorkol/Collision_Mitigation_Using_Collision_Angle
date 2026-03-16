@@ -1,19 +1,31 @@
 FROM osrf/ros:jazzy-desktop-full
 
-# Install development tools
+# Install development tools and ROS 2 Control Stack
 RUN apt-get update && apt-get install -y \
+    build-essential \
+    git wget curl unzip \
+    python3-colcon-common-extensions \
+    python3-rosdep \
+    python3-vcstool \
+    # Navigation & Simulation Base
     ros-jazzy-navigation2 \
     ros-jazzy-nav2-bringup \
     ros-jazzy-nav2-minimal-tb3-sim \
     ros-jazzy-turtlebot3-description \
+    # ROS 2 Control (The Core)
     ros-jazzy-ros2-control \
     ros-jazzy-ros2-controllers \
+    ros-jazzy-ros2controlcli \
+    # The "Missing Links" for MuJoCo Bridge
+    ros-jazzy-ros2-control-cmake \
     ros-jazzy-controller-manager \
-    python3-colcon-common-extensions \
-    python3-rosdep \
-    python3-vcstool \
-    git \
-    wget \
+    ros-jazzy-hardware-interface \
+    ros-jazzy-mujoco-vendor \
+    ros-jazzy-transmission-interface \
+    ros-jazzy-realtime-tools \
+    ros-jazzy-control-toolbox \
+    libglfw3-dev \
+    libgles2-mesa-dev \
     && rm -rf /var/lib/apt/lists/*
     
 # Set up the workspace

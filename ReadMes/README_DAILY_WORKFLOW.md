@@ -115,3 +115,20 @@ docker run -it \
     --volume="$(pwd)/install:/ros2_ws/install" \
     --volume="$(pwd)/log:/ros2_ws/log" \    nav2_jazzy
 ```
+
+## 📦 Troubleshooting Missing Dependencies (`rosdep`)
+
+If `colcon build` fails with errors like `CMake Error: By not providing "FindXXXX.cmake"...` or `package XXXX not found`, it usually means your source code requires libraries that aren't installed in your Docker image yet.
+
+### When to run this:
+* **After cloning a new repository** into your `src` folder (like the MuJoCo bridge).
+* **After creating a new ROS 2 package** that uses a new dependency.
+* **If you see "package not found" errors** during the build process.
+
+### How to run it:
+Run this **inside the container** from the root of your workspace:
+
+```bash
+cd /ros2_ws
+sudo apt update
+rosdep install --from-paths src --ignore-src -y
