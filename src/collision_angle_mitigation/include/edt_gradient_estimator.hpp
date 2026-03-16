@@ -9,6 +9,7 @@
 #include "opencv2/opencv.hpp"
 #include <tf2/LinearMath/Quaternion.h>
 #include "robot_footprint.hpp"
+#include "nav2_costmap_2d/costmap_2d.hpp"
 
 using namespace collision_angle_mitigation;
 namespace edt_gradient_estimator
@@ -37,12 +38,23 @@ public:
                  const nav_msgs::msg::MapMetaData & map_info,
                  geometry_msgs::msg::PoseStamped & out_gradient_pose);
 
+  bool calculate(const geometry_msgs::msg::Pose & robot_pose,
+                 const cv::Mat & edt_map,
+                 const nav2_costmap_2d::Costmap2D * costmap,
+                 geometry_msgs::msg::PoseStamped & out_gradient_pose);
+
   /**
    * @brief Finds the point on the footprint with the minimum EDT value.
    */
   bool getMinEDT(const geometry_msgs::msg::Pose & robot_pose, 
                  const cv::Mat & edt_map,
                  const nav_msgs::msg::MapMetaData & map_info,
+                 MapIndex & out_min_idx,
+                 float & out_min_val);
+
+  bool getMinEDT(const geometry_msgs::msg::Pose & robot_pose,
+                 const cv::Mat & edt_map,
+                 const nav2_costmap_2d::Costmap2D * costmap,
                  MapIndex & out_min_idx,
                  float & out_min_val);
 
@@ -54,6 +66,10 @@ public:
                const MapIndex & min_idx,
                geometry_msgs::msg::PoseStamped & out_gradient_pose);
 
+  bool getGrad(const cv::Mat & edt_map,
+               const nav2_costmap_2d::Costmap2D * costmap,
+               const MapIndex & min_idx,
+               geometry_msgs::msg::PoseStamped & out_gradient_pose);
 
 private:
   std::unique_ptr<RobotFootprint> footprint_model_;

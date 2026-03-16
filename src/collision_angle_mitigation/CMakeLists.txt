@@ -13,7 +13,7 @@ endif()
 # Find dependencies
 find_package(ament_cmake REQUIRED)
 find_package(rclcpp REQUIRED)
-find_package(nav2_mppi_controller REQUIRED)
+find_package(emergency_mppi REQUIRED)
 find_package(nav2_core REQUIRED)
 find_package(pluginlib REQUIRED)
 find_package(rcl_interfaces REQUIRED)
@@ -23,6 +23,8 @@ find_package(OpenCV REQUIRED)
 find_package(geometry_msgs REQUIRED)
 find_package(tf2_ros REQUIRED)
 find_package(tf2_geometry_msgs REQUIRED)
+find_package(angles REQUIRED)
+find_package(OpenMP REQUIRED)
 
 find_package(rosidl_default_generators REQUIRED)
 
@@ -32,18 +34,6 @@ rosidl_generate_interfaces(${PROJECT_NAME}
 )
 rosidl_get_typesupport_target(cpp_typesupport_target
   ${PROJECT_NAME} "rosidl_typesupport_cpp")
-
-# Build the critic plugin as a shared library
-add_library(collision_angle_critic SHARED
-  src/collision_angle_critic.cpp)
-target_include_directories(collision_angle_critic PUBLIC
-  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
-  $<INSTALL_INTERFACE:include>)
-ament_target_dependencies(collision_angle_critic
-  rclcpp
-  nav2_mppi_controller
-  nav2_core
-  pluginlib)
 
 # Build the EDT Layer plugin
 add_library(edt_layer SHARED src/edt_layer.cpp)
@@ -99,6 +89,27 @@ ament_target_dependencies(edt_monitor_node
   tf2_geometry_msgs)
 target_link_libraries(edt_monitor_node "${cpp_typesupport_target}" collision_mitigation_utils)
 
+
+# Build the critic plugin as a shared library
+add_library(collision_angle_critic SHARED
+  src/collision_angle_critic.cpp)
+target_include_directories(collision_angle_critic PUBLIC
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
+  $<INSTALL_INTERFACE:include>)
+ament_target_dependencies(collision_angle_critic
+  rclcpp
+  emergency_mppi
+  nav2_core
+  pluginlib
+  nav2_costmap_2d
+  angles
+  tf2
+  tf2_geometry_msgs)
+if(OpenMP_CXX_FOUND)
+  target_link_libraries(collision_angle_critic OpenMP::OpenMP_CXX)
+endif()
+target_link_libraries(collision_angle_critic collision_mitigation_utils emergency_mppi::emergency_mppi_lib)
+
 # Install library and executable
 install(TARGETS
   collision_angle_critic
@@ -119,7 +130,7 @@ install(
 install(
   FILES plugins.xml costmap_plugins.xml
   DESTINATION share/${PROJECT_NAME})
-pluginlib_export_plugin_description_file(nav2_mppi_controller plugins.xml)
+pluginlib_export_plugin_description_file(emergency_mppi plugins.xml)
 pluginlib_export_plugin_description_file(nav2_costmap_2d costmap_plugins.xml)
 
 if(BUILD_TESTING)

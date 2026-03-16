@@ -13,8 +13,14 @@
 // limitations under the License.
 
 #include "collision_angle_critic.hpp"
+#include "nav2_costmap_2d/costmap_2d_ros.hpp"
+#include <tf2/utils.h>
+#include <tf2_geometry_msgs/tf2_geometry_msgs.hpp>
+#include "angles/angles.h"
+#include <omp.h>
+#include <cstring>
 
-namespace mppi::critics
+namespace emergency_mppi::critics
 {
 
 void CollisionAngleCritic::initialize()
@@ -23,7 +29,14 @@ void CollisionAngleCritic::initialize()
   auto getParentParam = parameters_handler_->getParamGetter(parent_name_);
 
   getParam(power_, "cost_power", 1);
-  getParam(weight_, "cost_weight", 4.0f);
+  getParam(weight_, "cost_weight", 0.0f);
+
+  float radius;
+  // TODO: Get Robot Radius from parameters
+  getParam(radius, "robot_radius", 0.17f);
+
+  edt_estimator_ = std::make_unique<edt_gradient_estimator::EdtGradientEstimator>(radius);
+
   RCLCPP_INFO(
     logger_, "CollisionAngleCritic instantiated with %d power and %f weight.",
     power_, weight_);
@@ -36,85 +49,144 @@ void CollisionAngleCritic::initialize()
   const float min_sgn = vx_min > 0.0f ? 1.0f : -1.0f;
   max_vel_ = sqrtf(vx_max * vx_max + vy_max * vy_max);
   min_vel_ = min_sgn * sqrtf(vx_min * vx_min + vy_max * vy_max);
+
+  auto * layered_costmap = costmap_ros_->getLayeredCostmap();
+  auto plugins = layered_costmap->getPlugins();
+  for (auto plugin : *plugins) {
+    auto edt_layer = std::dynamic_pointer_cast<collision_angle_mitigation::EdtLayer>(plugin);
+    if (edt_layer) {
+      edt_layer_ = edt_layer.get();
+      break;
+    }
+  }
+
+  if (!edt_layer_) {
+    RCLCPP_WARN(logger_, "CollisionAngleCritic: EdtLayer not found in costmap. Ensure it is added to the plugins.");
+  }
 }
 
 void CollisionAngleCritic::score(CriticData & data)
 {
-  using xt::evaluation_strategy::immediate;
-
-  if (!enabled_) {
+  if (!enabled_ || !edt_layer_) {
     return;
   }
 
-  // Differential motion model
-  auto diff = dynamic_cast<DiffDriveMotionModel *>(data.motion_model.get());
-  if (diff != nullptr) {
-    if (power_ > 1u) {
-      data.costs += xt::pow(
-        xt::sum(
-          (std::move(
-            xt::maximum(data.state.vx - max_vel_, 0.0f) +
-            xt::maximum(min_vel_ - data.state.vx, 0.0f))) *
-          data.model_dt, {1}, immediate) * weight_, power_);
-    } else {
-      data.costs += xt::sum(
-        (std::move(
-          xt::maximum(data.state.vx - max_vel_, 0.0f) +
-          xt::maximum(min_vel_ - data.state.vx, 0.0f))) *
-        data.model_dt, {1}, immediate) * weight_;
-    }
+  // Get the latest EDT map (Thread-safe access)
+  cv::Mat edt_map = edt_layer_->getEdt();
+  if (edt_map.empty()) {
     return;
   }
 
-  // Omnidirectional motion model
-  auto omni = dynamic_cast<OmniMotionModel *>(data.motion_model.get());
-  if (omni != nullptr) {
-    auto sgn = xt::eval(xt::where(data.state.vx > 0.0f, 1.0f, -1.0f));
-    auto vel_total = sgn * xt::hypot(data.state.vx, data.state.vy);
-    if (power_ > 1u) {
-      data.costs += xt::pow(
-        xt::sum(
-          (std::move(
-            xt::maximum(vel_total - max_vel_, 0.0f) +
-            xt::maximum(min_vel_ - vel_total, 0.0f))) *
-          data.model_dt, {1}, immediate) * weight_, power_);
-    } else {
-      data.costs += xt::sum(
-        (std::move(
-          xt::maximum(vel_total - max_vel_, 0.0f) +
-          xt::maximum(min_vel_ - vel_total, 0.0f))) *
-        data.model_dt, {1}, immediate) * weight_;
-    }
-    return;
-  }
+  // Get Map Metadata
+  auto * costmap = edt_layer_->getCostmap();
 
-  // Ackermann motion model
-  auto acker = dynamic_cast<AckermannMotionModel *>(data.motion_model.get());
-  if (acker != nullptr) {
-    auto & vx = data.state.vx;
-    auto & wz = data.state.wz;
-    auto out_of_turning_rad_motion = xt::maximum(
-      acker->getMinTurningRadius() - (xt::fabs(vx) / xt::fabs(wz)), 0.0f);
-    if (power_ > 1u) {
-      data.costs += xt::pow(
-        xt::sum(
-          (std::move(
-            xt::maximum(data.state.vx - max_vel_, 0.0f) +
-            xt::maximum(min_vel_ - data.state.vx, 0.0f) + out_of_turning_rad_motion)) *
-          data.model_dt, {1}, immediate) * weight_, power_);
-    } else {
-      data.costs += xt::sum(
-        (std::move(
-          xt::maximum(data.state.vx - max_vel_, 0.0f) +
-          xt::maximum(min_vel_ - data.state.vx, 0.0f) + out_of_turning_rad_motion)) *
-        data.model_dt, {1}, immediate) * weight_;
+  unsigned int size_x = costmap->getSizeInCellsX();
+  unsigned int size_y = costmap->getSizeInCellsY();
+  size_t total_cells = size_x * size_y;
+
+  if (grad_cache_flag_.size() != total_cells) {
+    grad_cache_val_.resize(total_cells);
+    grad_cache_yaw_.resize(total_cells);
+    grad_cache_flag_.resize(total_cells);
+  }
+  std::memset(grad_cache_flag_.data(), 0, total_cells * sizeof(uint8_t));
+
+  // Extract trajectory and state tensors for xtensor operations
+  const size_t batch_size = data.trajectories.x.shape(0);
+  const size_t time_steps = data.trajectories.x.shape(1);
+
+  #pragma omp parallel for
+  for (int i = 0; i < static_cast<int>(batch_size); ++i) {
+    float trajectory_cost = 0.0f;
+    geometry_msgs::msg::Pose robot_pose;
+    geometry_msgs::msg::PoseStamped gradient_pose;
+    tf2::Quaternion q;
+    // Iterate through time steps
+    for (size_t t = 0; t < time_steps; ++t) {
+      robot_pose.position.x = data.trajectories.x(i, t);
+      robot_pose.position.y = data.trajectories.y(i, t);
+      double robot_yaw = data.trajectories.yaws(i, t);
+
+      q.setRPY(0, 0, robot_yaw);
+      robot_pose.orientation = tf2::toMsg(q);
+
+      unsigned int mx, my;
+      if (costmap->worldToMap(robot_pose.position.x, robot_pose.position.y, mx, my)) {
+        unsigned int index = my * size_x + mx;
+        
+        // Atomic load with acquire to ensure we see data written before the flag
+        uint8_t flag = __atomic_load_n(&grad_cache_flag_[index], __ATOMIC_ACQUIRE);
+        
+        float val;
+        double grad_yaw;
+        bool has_grad = false;
+
+        if (flag == 1) {
+          val = grad_cache_val_[index];
+          grad_yaw = grad_cache_yaw_[index];
+          has_grad = true;
+        } else if (flag == 0) {
+          // Not computed yet
+          MapIndex idx;
+          if (edt_estimator_->getMinEDT(robot_pose, edt_map, costmap, idx, val)) {
+            if (val < 1.0f || latency_testing_) {
+              if (edt_estimator_->getGrad(edt_map, costmap, idx, gradient_pose)) {
+                grad_yaw = tf2::getYaw(gradient_pose.pose.orientation);
+                
+                grad_cache_val_[index] = val;
+                grad_cache_yaw_[index] = static_cast<float>(grad_yaw);
+                // Atomic store with release to ensure data is visible before flag is set
+                __atomic_store_n(&grad_cache_flag_[index], 1, __ATOMIC_RELEASE);
+                has_grad = true;
+              }
+            }
+          }
+          if (!has_grad) {
+            // Mark as invalid/no-grad so other threads don't recompute
+            __atomic_store_n(&grad_cache_flag_[index], 2, __ATOMIC_RELEASE);
+          }
+        }
+        // If flag == 2, we skip (has_grad remains false)
+
+        if (has_grad) {
+
+            // Calculate velocity vector from state (Robot Frame)
+            double vx = data.state.vx(i, t);
+            double vy = data.state.vy(i, t);
+
+            double vel_yaw;
+            // If velocity is negligible, fallback to robot heading
+            if (std::hypot(vx, vy) < 1e-3) {
+              vel_yaw = robot_yaw;
+            } else {
+              // Convert robot-frame velocity to global-frame heading
+              // This is equivalent to rotating the vector (vx, vy) by robot_yaw
+              vel_yaw = robot_yaw + std::atan2(vy, vx);
+            }
+
+            double diff = angles::shortest_angular_distance(vel_yaw, grad_yaw);
+
+            // Gradient points AWAY from obstacle (Ascent).
+            // We want to penalize moving TOWARDS obstacle (Descent).
+            // Alignment = 1.0 (Moving Away), -1.0 (Moving Towards)
+            double alignment = std::cos(diff);
+            double dot_product = std::sqrt(std::pow(vx, 2) + std::pow(vy, 2)) * alignment;
+
+            // TODO remove the false condition to enable penalization of moving towards obstacles. Currently left off for testing purposes.
+            // TODO : Change the actual cost function to work with the nav2 costs given according to collision etc
+            if (alignment < 0.0 && false) {
+              trajectory_cost += weight_ * std::pow(-dot_product, power_) * data.model_dt;
+            }
+            if (!latency_testing_) t = time_steps; // Break inner loop if we are within the threshold to save computation on this trajectory.
+        }
+      }
     }
-    return;
+    data.costs[i] += trajectory_cost;
   }
 }
 
-}  // namespace mppi::critics
+}  // namespace emergency_mppi::critics
 
 #include <pluginlib/class_list_macros.hpp>
 
-PLUGINLIB_EXPORT_CLASS(mppi::critics::CollisionAngleCritic, mppi::critics::CriticFunction)
+PLUGINLIB_EXPORT_CLASS(emergency_mppi::critics::CollisionAngleCritic, emergency_mppi::critics::CriticFunction)

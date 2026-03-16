@@ -4,6 +4,7 @@
 #include <vector>
 #include <geometry_msgs/msg/pose.hpp>
 #include <nav_msgs/msg/map_meta_data.hpp>
+#include "nav2_costmap_2d/costmap_2d.hpp"
 
 namespace collision_angle_mitigation{
 
@@ -30,6 +31,11 @@ public:
         const geometry_msgs::msg::Pose& robot_pose,
         const nav_msgs::msg::MapMetaData& map_info,
         std::vector<MapIndex>& out_indices) const = 0;
+
+    virtual void getIndices(
+        const geometry_msgs::msg::Pose& robot_pose,
+        const nav2_costmap_2d::Costmap2D& costmap,
+        std::vector<MapIndex>& out_indices) const = 0;
 };
 
 /**
@@ -42,6 +48,11 @@ public:
     void getIndices(
         const geometry_msgs::msg::Pose& robot_pose,
         const nav_msgs::msg::MapMetaData& map_info,
+        std::vector<MapIndex>& out_indices) const override;
+
+    void getIndices(
+        const geometry_msgs::msg::Pose& robot_pose,
+        const nav2_costmap_2d::Costmap2D& costmap,
         std::vector<MapIndex>& out_indices) const override;
 
 private:
