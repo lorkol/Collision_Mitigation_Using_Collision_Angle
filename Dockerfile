@@ -28,6 +28,12 @@ RUN apt-get update && apt-get install -y \
     libgles2-mesa-dev \
     && rm -rf /var/lib/apt/lists/*
     
+# Ensure FetchContent uses HTTPS (avoid SSH rewrite rules inside containers)
+RUN git config --global --unset-all url."git@github.com:".insteadof || true && \
+    git config --global --unset-all url."ssh://git@github.com/".insteadof || true && \
+    git config --global --unset-all url."https://github.com/".insteadof || true && \
+    git config --global --get-regexp '^url\..*\.insteadof$' || true
+    
 # Set up the workspace
 WORKDIR /ros2_ws
 
