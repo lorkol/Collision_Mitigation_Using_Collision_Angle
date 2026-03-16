@@ -9,15 +9,46 @@ This file documents every instruction in the \`Dockerfile\` used to build the RO
 
 ## 2. Dependency Management
 - **\`RUN apt-get update\`**: Refreshes the local package index to ensure the latest binary versions are retrieved.
+- **\`build-essential\` & \`git wget curl unzip\` **: Essential utilities for cloning code and downloading assets.
+- **\`python3-colcon-common-extensions\`**: The primary build tool for ROS 2, used to compile your C++ workspace.
+- **python3-rosdep**: Tools for managing system dependencies.
+- **python3-vcstool**: Version control tool for managing multiple repositories.
+
+Navigation & Simulation Base
+
 - **\`ros-jazzy-navigation2\` & \`nav2-bringup\`**: Installs the high-level navigation stack and the official launch scripts.
 - **\`ros-jazzy-nav2-minimal-tb3-sim\`**: Provides the core logic required to run a TurtleBot3 in a simulated world.
 - **\`ros-jazzy-turtlebot3-description\`**
 Provides the physical 3D mesh files (.dae/.stl) for the robot.
-- **\`python3-colcon-common-extensions\`**: The primary build tool for ROS 2, used to compile your C++ workspace.
-- **python3-rosdep**: Tools for managing system dependencies.
-- **python3-vcstool**: Version control tool for managing multiple repositories.
-- **git & wget**: Essential utilities for cloning code and downloading assets.
+
+ROS 2 Control (The Core)
+
+- **\`ros-jazzy-ros2-control\`**: The main coordination framework that provides the lifecycle management for the robot's hardware resources and state.
+- **\`ros-jazzy-ros2-controllers\`**: A library of pre-implemented control algorithms (e.g., DiffDriveController, JointStateBroadcaster) that process commands and drive the robot's joints.
+- **\`ros-jazzy-ros2controlcli\`**: Command-line interface tools used at runtime to load, unload, and switch between different controllers without restarting the entire system.
+
+The "Missing Links" for MuJoCo Bridge
+
+- **\`ros-jazzy-controller-manager\`**: The central node that hosts the controllers and manages their execution frequency and state transitions.
+- **\`ros-jazzy-hardware-interface\`**: Provides the pure virtual C++ base classes that your custom MuJoCo plugin must implement to talk to the ROS 2 ecosystem.
+- **\`ros-jazzy-mujoco-vendor\`**: A wrapper package that downloads and localizes the MuJoCo physics engine headers and binaries, ensuring they are compatible with the Jazzy environment.
+- **\`ros-jazzy-transmission-interface\`**: Handles the mathematical mapping between "actuator space" (motor effort) and "joint space" (robot wheel velocity).
+- **\`ros-jazzy-realtime-tools\`**: Provides memory-locked primitives (like realtime buffers and publishers) to ensure that the control loop is not interrupted by Linux system latency.
+- **\`ros-jazzy-control-toolbox\`**: A set of C++ utilities containing PID controllers, filters, and sine-wave generators used to smooth out raw command signals.
+- **\`libglfw3-dev\`**: The system-level development headers for the OpenGL framework, required to render the MuJoCo visualizer window on Ubuntu 24.04.
+- **\`libgles2-mesa-dev\`**: Provides the OpenGL ES 2.0 libraries, which allow the simulator to perform hardware-accelerated 3D rendering of the robot and obstacles.
+
 - **\`rm -rf /var/lib/apt/lists/*\`**: Deletes the package index after installation to keep the final image size small.
+
+- **\`RUN git config --global --unset-all url."git@github.com:".insteadof || true && \`**: Logic: Removes global rules that force git to replace HTTPS URLs with SSH (git@github.com:) \
+ Purpose: Prevents the build from failing due to missing SSH keys inside the container when a dependency tries to clone via GitHub.
+- **\`git config --global --unset-all url."ssh://git@github.com/".insteadof || true && \`**: Logic: Specifically targets and unsets the ssh:// protocol override for GitHub.\
+Purpose: Ensures that even if your local development machine is configured for SSH-only access, the Docker image remains portable and uses public HTTPS endpoints.
+- **\`git config --global --unset-all url."https://github.com/".insteadof || true && \`**: Logic: Removes any potential circular or "forced-HTTPS" rewrites that might conflict with standard FetchContent or vcs tools\
+Purpose: Restores the Git client to its factory default state for the GitHub domain.
+- **\`git config --global --get-regexp '^url\..*\.insteadof$' || true \`** : Logic: Performs a regex search for any remaining insteadof patterns in the global configuration.\
+Purpose: Acts as a diagnostic verification step to confirm the configuration is clean; the || true ensures that even if no rules are found, the Docker build continues.
+    
 
 ## 3. Workspace & State
 - **\`WORKDIR /ros2_ws\`**: Defines the root directory for all subsequent commands, standardizing the workspace structure.

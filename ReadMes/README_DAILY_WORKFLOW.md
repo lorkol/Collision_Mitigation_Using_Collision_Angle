@@ -10,10 +10,11 @@ Run the start script from your host:
 Source the workspace:
 
 ```bash
+source /opt/ros/jazzy/setup.bash
 source install/setup.bash
 ```
 
-Set the model to Waffle and launch the bringup:
+Launch the code:
 ```bash
 ros2 launch collision_angle_mitigation circular_simulation_launch.py headless:=False
 ```
@@ -61,23 +62,32 @@ Then in the container run
 source /opt/ros/jazzy/setup.bash
 source /ros2_ws/install/setup.bash
 ``` 
-# While working on EDT:
-keep building using:
-```bash
-colcon build --packages-select collision_angle_mitigation --parallel-workers 2
-```
 
-Running the node:
-```bash
-source install/setup.bash
-ros2 run collision_angle_mitigation edt_publisher_node
-```
 
 # Misc
 Make sure when opening and connecting to VSCode to download the c/c++ and IntelliJ extensions
 
 
 # TroubleShooting
+
+## 📦 Troubleshooting Missing Dependencies (`rosdep`)
+
+If `colcon build` fails with errors like `CMake Error: By not providing "FindXXXX.cmake"...` or `package XXXX not found`, it usually means your source code requires libraries that aren't installed in your Docker image yet.
+
+### When to run this:
+* **After cloning a new repository** into your `src` folder (like the MuJoCo bridge).
+* **After creating a new ROS 2 package** that uses a new dependency.
+* **If you see "package not found" errors** during the build process.
+
+### How to run it:
+Run this **inside the container** from the root of your workspace:
+
+```bash
+cd /ros2_ws
+sudo apt update
+rosdep install --from-paths src --ignore-src -y
+```
+
 
 ## 🖥️ Troubleshooting GUI & Display Issues
 
@@ -115,20 +125,3 @@ docker run -it \
     --volume="$(pwd)/install:/ros2_ws/install" \
     --volume="$(pwd)/log:/ros2_ws/log" \    nav2_jazzy
 ```
-
-## 📦 Troubleshooting Missing Dependencies (`rosdep`)
-
-If `colcon build` fails with errors like `CMake Error: By not providing "FindXXXX.cmake"...` or `package XXXX not found`, it usually means your source code requires libraries that aren't installed in your Docker image yet.
-
-### When to run this:
-* **After cloning a new repository** into your `src` folder (like the MuJoCo bridge).
-* **After creating a new ROS 2 package** that uses a new dependency.
-* **If you see "package not found" errors** during the build process.
-
-### How to run it:
-Run this **inside the container** from the root of your workspace:
-
-```bash
-cd /ros2_ws
-sudo apt update
-rosdep install --from-paths src --ignore-src -y

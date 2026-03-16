@@ -31,17 +31,17 @@ In the repo, under .vscode, add a c_cpp_properties.json: (After adding the c/c++
         {
             "name": "Linux",
             "includePath": [
+                "${workspaceFolder}/src/**",
                 "${workspaceFolder}/src/collision_angle_mitigation/include",
-                "${workspaceFolder}/src/navigation2/nav2_mppi_controller/include",
-                "${workspaceFolder}/install/nav2_mppi_controller/include",
-                "${workspaceFolder}/install/nav2_core/include",
-                "${workspaceFolder}/install/nav2_behavior_tree/include",
-                "${workspaceFolder}/install/nav2_costmap_2d/include",
-                "${workspaceFolder}/install/nav2_voxel_grid/include",
-                "${workspaceFolder}/install/nav2_util/include",
-                "${workspaceFolder}/install/nav2_msgs/include",
+                "${workspaceFolder}/install/**",
                 "/opt/ros/jazzy/include",
-                "/usr/include"
+                "/opt/ros/jazzy/include/**",
+                "/opt/ros/jazzy/include/rclcpp",
+                "/opt/ros/jazzy/include/rcl_interfaces",
+                "/opt/ros/jazzy/include/nav_msgs",
+                "/usr/include",
+                "/usr/include/opencv4",
+                "/ros2_ws/src/Mobile-Robot-Collision/build/collision_angle_mitigation/rosidl_generator_cpp"
             ],
             "defines": [
                 "DEFAULT_RMW_IMPLEMENTATION=rmw_fastrtps_cpp",
@@ -50,11 +50,11 @@ In the repo, under .vscode, add a c_cpp_properties.json: (After adding the c/c++
             "compilerPath": "/usr/bin/c++",
             "cStandard": "c17",
             "cppStandard": "gnu++17",
-            "intelliSenseMode": "linux-gcc-x64",
-            "compileCommands": "${workspaceFolder}/build/compile_commands.json"
+            "intelliSenseMode": "linux-gcc-x64"
         }
     ],
     "version": 4
+}
 ```
 
 and a settings.json(after adding the python extensions):
@@ -73,7 +73,14 @@ and a settings.json(after adding the python extensions):
     "[python]": {
         "editor.defaultFormatter": "ms-python.python",
         "editor.formatOnSave": true
-    }
+    },
+    "favorites.resources": [
+        {
+            "filePath": "src/navigation2/nav2_bringup/launch/tb3_simulation_launch.py",
+            "group": "Default"
+        }
+    ],
+    "cmake.sourceDirectory": "/ros2_ws/src/Mobile-Robot-Collision/src/collision_angle_mitigation"
 }
 
 ```
