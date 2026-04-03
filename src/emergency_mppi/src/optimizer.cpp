@@ -205,10 +205,29 @@ void Optimizer::optimize()
     }
     //Run this if it was true from the start OR if it just became true from the normal mode evaluation
     if(critic_manager_.getEmergencyMode()){
-      control_sequence_.vx.fill(0.0);
+      // Generate a max-deceleration braking ramp from current velocity
+      float vx_curr = state_.speed.linear.x;
+      float decel_vx = settings_.constraints.ax_min * settings_.model_dt;
+      for (unsigned int t = 0; t < settings_.time_steps; ++t) {
+        if (vx_curr > 0.0f) {
+          vx_curr = std::max(0.0f, vx_curr + decel_vx);
+        } else if (vx_curr < 0.0f) {
+          vx_curr = std::min(0.0f, vx_curr - decel_vx);
+        }
+        control_sequence_.vx(t) = vx_curr;
+      }
       control_sequence_.wz.fill(0.0);
       if (isHolonomic()) {
-        control_sequence_.vy.fill(0.0);
+        float vy_curr = state_.speed.linear.y;
+        float decel_vy = settings_.constraints.ay_min * settings_.model_dt;
+        for (unsigned int t = 0; t < settings_.time_steps; ++t) {
+          if (vy_curr > 0.0f) {
+            vy_curr = std::max(0.0f, vy_curr + decel_vy);
+          } else if (vy_curr < 0.0f) {
+            vy_curr = std::min(0.0f, vy_curr - decel_vy);
+          }
+          control_sequence_.vy(t) = vy_curr;
+        }
       }
       generateNoisedTrajectories();
       critic_manager_.evalTrajectoriesScores(critics_data_);
