@@ -60,9 +60,6 @@ protected:
   std::vector<float> grad_cache_yaw_;
   std::vector<uint8_t> grad_cache_flag_; // 0: Unknown, 1: Valid, 2: Invalid
 
-// TODO: Remove this after testing latency to only have this critic work when colliding or near-colliding trajectories are present. Currently left on to allow for testing without needing to be near obstacles.
-private:
-  bool latency_testing_{true};
 };
 
 }  // namespace emergency_mppi::critics

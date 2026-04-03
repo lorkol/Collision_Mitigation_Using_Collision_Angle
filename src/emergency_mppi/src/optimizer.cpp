@@ -207,7 +207,7 @@ void Optimizer::optimize()
     if(critic_manager_.getEmergencyMode()){
       // Generate a max-deceleration braking ramp from current velocity
       float vx_curr = state_.speed.linear.x;
-      float decel_vx = settings_.constraints.ax_min * settings_.model_dt;
+      float const decel_vx = settings_.constraints.ax_min * settings_.model_dt;
       for (unsigned int t = 0; t < settings_.time_steps; ++t) {
         if (vx_curr > 0.0f) {
           vx_curr = std::max(0.0f, vx_curr + decel_vx);
