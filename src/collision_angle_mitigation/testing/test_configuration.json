@@ -1,0 +1,10 @@
+{
+  "robot_initial_pose": { "x": -2.0, "y": -0.5, "z": 0.01, "roll": 0.0, "pitch": 0.0, "yaw": 0.0 },
+  "robot_initial_velocity": { "linear_x": 0.0, "angular_z": 0.0 },
+  "goal_pose": { "x": 5.0, "y": 0.0, "yaw": 0.0 },
+  "obstacle_to_spawn": {
+    "name": "test_obstacle",
+    "sdf_filename": "single_cylinder.sdf",
+    "pose": { "x": 1.0, "y": 0.0, "z": 0.25, "roll": 0.0, "pitch": 0.0, "yaw": 0.0 }
+  }
+}
