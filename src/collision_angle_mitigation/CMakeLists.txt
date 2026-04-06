@@ -126,6 +126,10 @@ install(
   DIRECTORY include/
   DESTINATION include)
 
+install(
+  DIRECTORY behavior_trees /
+  DESTINATION share/${PROJECT_NAME})
+
 # Install and export the plugin definition
 install(
   FILES plugins.xml costmap_plugins.xml
