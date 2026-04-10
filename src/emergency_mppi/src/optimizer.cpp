@@ -46,6 +46,7 @@ void Optimizer::initialize(
 
   auto node = parent_.lock();
   logger_ = node->get_logger();
+  clock_ = node->get_clock();
 
   getParams();
 
@@ -172,7 +173,20 @@ geometry_msgs::msg::TwistStamped Optimizer::evalControl(
 {
   prepare(robot_pose, robot_speed, plan, goal, goal_checker);
 
+  const bool was_in_emergency = critic_manager_.getEmergencyMode();
   optimize();
+  const bool is_in_emergency = critic_manager_.getEmergencyMode();
+
+  if (!was_in_emergency && is_in_emergency) {
+    RCLCPP_WARN(
+      logger_,
+      "[MPPI] ENTERING EMERGENCY MODE: all sampled trajectories predict lethal collision. "
+      "Switching to damage-minimizing braking.");
+  } else if (is_in_emergency) {
+    RCLCPP_WARN_THROTTLE(
+      logger_, *clock_, 500,
+      "[MPPI] EMERGENCY MODE ACTIVE: braking to minimize collision damage.");
+  }
 
   utils::savitskyGolayFilter(control_sequence_, control_history_, settings_);
   auto control = getControlFromSequenceAsTwist(plan.header.stamp);
