@@ -91,11 +91,19 @@ void CriticManager::evalTrajectoriesScores(
   CriticData & data) const
 {
   const auto & active_critics = emergency_mode_ ? emergency_critics_ : critics_;
-  for (const auto & critic : active_critics) {
+  const auto & active_critic_names = emergency_mode_ ? emergency_critic_names_ : critic_names_;
+
+  for (size_t i = 0; i < active_critics.size(); ++i) { 
+    const auto & critic = active_critics[i]; 
     if (data.fail_flag) {
       break;
     }
     critic->score(data);
+
+    if (data.fail_flag) { 
+      RCLCPP_DEBUG( 
+        logger_, "Critic '%s' triggered a failure flag.", active_critic_names[i].c_str()); 
+    } 
   }
 }
 
