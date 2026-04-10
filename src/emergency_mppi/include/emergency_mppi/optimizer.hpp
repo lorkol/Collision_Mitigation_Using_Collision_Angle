@@ -125,6 +125,16 @@ public:
 
 protected:
   /**
+   * @brief Evaluate trajectories in normal operation and check for emergency transition
+   */
+  void evaluateInNormalMode();
+
+  /**
+   * @brief Evaluate trajectories in emergency mode (e.g. braking)
+   */
+  void evaluateInEmergencyMode();
+
+  /**
    * @brief Main function to generate, score, and return trajectories
    */
   void optimize();

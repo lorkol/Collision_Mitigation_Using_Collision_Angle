@@ -186,25 +186,14 @@ geometry_msgs::msg::TwistStamped Optimizer::evalControl(
   return control;
 }
 
-void Optimizer::optimize()
+void Optimizer::evaluateInNormalMode()
 {
-  for (size_t i = 0; i < settings_.iteration_count; ++i) {
-    // 1. Normal Mode Evaluation
-    if(!critic_manager_.getEmergencyMode()) {
       generateNoisedTrajectories();
       critic_manager_.evalTrajectoriesScores(critics_data_);
+}
 
-      float min_cost = xt::amin(costs_)();
-
-      // 2. Check for Total Collision
-      // If the best trajectory cost is extremely high, we assume all valid paths are blocked.
-      if (min_cost >= emergency_collision_cost_) {
-        RCLCPP_WARN(logger_, "MPPI: Entering EMERGENCY MODE! All trajectory costs >= threshold (%f >= %f)", min_cost, emergency_collision_cost_);
-        critic_manager_.setEmergencyMode(true);
-      }
-    }
-    //Run this if it was true from the start OR if it just became true from the normal mode evaluation
-    if(critic_manager_.getEmergencyMode()){
+void Optimizer::evaluateInEmergencyMode()
+{
       // Generate a max-deceleration braking ramp from current velocity
       float vx_curr = state_.speed.linear.x;
       float const decel_vx = settings_.constraints.ax_min * settings_.model_dt;
@@ -233,6 +222,32 @@ void Optimizer::optimize()
       critic_manager_.evalTrajectoriesScores(critics_data_);
     }
 
+void Optimizer::optimize()
+{
+  for (size_t i = 0; i < settings_.iteration_count; ++i) {
+    // Start of the optimization cycle, not in emergency mode yet.
+    if (!critic_manager_.getEmergencyMode()) {
+      evaluateInNormalMode();
+
+      // The only trigger for emergency mode is the fail_flag, which is only set
+      // by a critic when an inevitable lethal collision is detected.
+      if (critics_data_.fail_flag) {
+        RCLCPP_WARN(
+          logger_,
+          "Inevitable collision detected, transitioning to damage-minimizing emergency mode!");
+        critic_manager_.setEmergencyMode(true);
+      }
+    }
+
+    // If normal mode evaluation triggered emergency mode, or if we were already
+    // in emergency mode, run the emergency evaluation.
+    if (critic_manager_.getEmergencyMode()) {
+      // Reset flag and costs to give emergency critics a clean slate to find
+      // the best possible "damage-minimizing" trajectory.
+      critics_data_.fail_flag = false;
+      costs_.fill(0.0f);
+      evaluateInEmergencyMode();
+    }
     updateControlSequence();
   }
 }
