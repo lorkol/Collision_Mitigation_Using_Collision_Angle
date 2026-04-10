@@ -20,6 +20,29 @@ from launch.substitutions import LaunchConfiguration, PythonExpression
 
 from launch_ros.actions import Node
 
+import json
+from launch.actions import SetLaunchConfiguration
+
+def _load_test_config_and_set_args(context, *args, **kwargs):
+    test_config_path = LaunchConfiguration('test_config_file').perform(context)
+
+    if not test_config_path or not os.path.exists(test_config_path):
+        return []
+
+    with open(test_config_path) as f:
+        config = json.load(f)
+
+    pose = config.get('robot_initial_pose', {})
+
+    return [
+        SetLaunchConfiguration('x_pose', str(pose.get('x',  -2.0))),
+        SetLaunchConfiguration('y_pose', str(pose.get('y',  -0.5))),
+        SetLaunchConfiguration('z_pose', str(pose.get('z',   0.01))),
+        SetLaunchConfiguration('roll',   str(pose.get('roll',  0.0))),
+        SetLaunchConfiguration('pitch',  str(pose.get('pitch', 0.0))),
+        SetLaunchConfiguration('yaw',    str(pose.get('yaw',   0.0))),
+    ]
+
 
 def generate_launch_description():
     # Get the launch directory
@@ -37,6 +60,8 @@ def generate_launch_description():
     autostart = LaunchConfiguration('autostart')
     use_composition = LaunchConfiguration('use_composition')
     use_respawn = LaunchConfiguration('use_respawn')
+
+    test_config_file = LaunchConfiguration('test_config_file')
 
     # Launch configuration variables specific to simulation
     rviz_config_file = LaunchConfiguration('rviz_config_file')
@@ -150,6 +175,11 @@ def generate_launch_description():
         description='Full path to robot sdf file to spawn the robot in gazebo',
     )
 
+    declare_test_config_file_cmd = DeclareLaunchArgument(
+        'test_config_file',
+        default_value=os.path.join(bringup_dir, 'testing', 'test_configuration.json'),
+        description='Path to test_configuration.json')
+
     urdf = os.path.join(sim_dir, 'urdf', 'circular_robot.urdf')
     with open(urdf, 'r') as infp:
         robot_description = infp.read()
@@ -244,6 +274,17 @@ def generate_launch_description():
         launch_arguments={'use_sim_time': use_sim_time}.items()
     )
 
+    test_runner_node_cmd = Node(
+        package='collision_angle_mitigation',
+        executable='test_runner_node',
+        name='test_runner_node',
+        output='screen',
+        parameters=[{
+            'use_sim_time': use_sim_time,
+            'test_config_file': test_config_file,
+        }]
+    )
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -266,9 +307,12 @@ def generate_launch_description():
     ld.add_action(declare_robot_name_cmd)
     ld.add_action(declare_robot_sdf_cmd)
     ld.add_action(declare_use_respawn_cmd)
+    ld.add_action(declare_test_config_file_cmd)
 
     ld.add_action(world_sdf_xacro)
     ld.add_action(remove_temp_sdf_file)
+    # Override x_pose/y_pose/etc from JSON before gz_robot resolves them
+    ld.add_action(OpaqueFunction(function=_load_test_config_and_set_args))
     ld.add_action(gz_robot)
     ld.add_action(gazebo_server)
     ld.add_action(gazebo_client)
@@ -278,5 +322,6 @@ def generate_launch_description():
     ld.add_action(rviz_cmd)
     ld.add_action(bringup_cmd)
     ld.add_action(edt_publisher_cmd)
+    ld.add_action(test_runner_node_cmd)
 
     return ld

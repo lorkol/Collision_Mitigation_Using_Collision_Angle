@@ -127,7 +127,7 @@ install(
   DESTINATION include)
 
 install(
-  DIRECTORY behavior_trees /
+  DIRECTORY behavior_trees
   DESTINATION share/${PROJECT_NAME})
 
 # Install and export the plugin definition
@@ -142,8 +142,14 @@ if(BUILD_TESTING)
   ament_lint_auto_find_test_dependencies()
 endif()
 
-install(DIRECTORY launch models params urdf worlds configs maps rviz
+install(DIRECTORY launch models params urdf worlds configs maps rviz testing scripts
   DESTINATION share/${PROJECT_NAME}
+)
+
+install(PROGRAMS
+  scripts/test_runner_node.py
+  RENAME test_runner_node
+  DESTINATION lib/${PROJECT_NAME}
 )
 
 ament_package()
