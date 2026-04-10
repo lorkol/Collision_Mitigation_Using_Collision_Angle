@@ -123,6 +123,12 @@ public:
    */
   void reset(bool reset_dynamic_speed_limits = true);
 
+  /**
+   * @brief Get emergency mode state
+   * @return bool if in emergency mode
+   */
+  bool getEmergencyMode() const {return critic_manager_.getEmergencyMode();}
+
 protected:
   /**
    * @brief Evaluate trajectories in normal operation and check for emergency transition

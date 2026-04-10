@@ -127,7 +127,7 @@ install(
   DESTINATION include)
 
 install(
-  DIRECTORY behavior_trees /
+  DIRECTORY behavior_trees
   DESTINATION share/${PROJECT_NAME})
 
 # Install and export the plugin definition

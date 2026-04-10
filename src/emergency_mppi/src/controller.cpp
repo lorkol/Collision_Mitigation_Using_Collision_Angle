@@ -86,7 +86,28 @@ geometry_msgs::msg::TwistStamped MPPIController::computeVelocityCommands(
   std::lock_guard<std::mutex> param_lock(*parameters_handler_->getLock());
   geometry_msgs::msg::Pose goal = path_handler_.getTransformedGoal(robot_pose.header.stamp).pose;
 
-  nav_msgs::msg::Path transformed_plan = path_handler_.transformPath(robot_pose);
+  nav_msgs::msg::Path transformed_plan;
+  try {
+    transformed_plan = path_handler_.transformPath(robot_pose);
+  } catch (const nav2_core::InvalidPath & e) {
+    // If we are in emergency mode, the path is not used by emergency critics.
+    // We can proceed with an empty path.
+    if (optimizer_.getEmergencyMode()) {
+      RCLCPP_WARN(
+        logger_,
+        "Path is invalid, but controller is in emergency mode. Proceeding with empty path. "
+        "Exception: %s", e.what());
+    } else {
+    // STATE: NORMAL
+    // This is a critical failure in normal operation. Re-throw the exception
+    // so the ControllerServer can catch it and abort the navigation task.
+    RCLCPP_ERROR(
+      logger_,
+      "Path is invalid. Escalating to ControllerServer to handle failure. "
+      "Exception: %s", e.what());
+    throw; // This re-throws the original exception.
+    }
+  }
 
   nav2_costmap_2d::Costmap2D * costmap = costmap_ros_->getCostmap();
   std::unique_lock<nav2_costmap_2d::Costmap2D::mutex_t> costmap_lock(*(costmap->getMutex()));
