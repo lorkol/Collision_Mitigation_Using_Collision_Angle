@@ -34,6 +34,12 @@ void MPPIController::configure(
   parameters_handler_ = std::make_unique<ParametersHandler>(parent);
 
   auto node = parent_.lock();
+  // The logger is inherited from the nav2_core::Controller base class.
+  // It needs to be initialized from the parent node.
+  logger_ = node->get_logger();
+  // Set the logger level to WARN. This will show WARN, ERROR, and FATAL messages.
+  logger_.set_level(rclcpp::Logger::Level::Warn);
+
   // Get high-level controller parameters
   auto getParam = parameters_handler_->getParamGetter(name_);
   getParam(visualize_, "visualize", false);

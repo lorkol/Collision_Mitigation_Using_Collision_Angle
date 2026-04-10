@@ -193,6 +193,16 @@ void CostCritic::score(CriticData & data)
         break;
       }
 
+      // Physical contact detection: with consider_footprint=false, inCollision() only triggers
+      // for LETHAL cells (within the obstacle body). But INSCRIBED means the robot CENTER is
+      // within robot_radius of the obstacle surface — guaranteed physical contact. Treat it
+      // identically to LETHAL.
+      if (pose_cost >= static_cast<float>(nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE)) {
+        traj_cost = collision_cost_;
+        trajectory_collide = true;
+        break;
+      }
+
       // Let near-collision trajectory points be punished severely
       // Note that we collision check based on the footprint actual,
       // but score based on the center-point cost regardless

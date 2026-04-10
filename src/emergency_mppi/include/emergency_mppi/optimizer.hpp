@@ -277,6 +277,7 @@ protected:
     std::nullopt, std::nullopt};  /// Caution, keep references
 
   rclcpp::Logger logger_{rclcpp::get_logger("MPPIController")};
+  rclcpp::Clock::SharedPtr clock_;
 
   float emergency_collision_cost_;
 };
