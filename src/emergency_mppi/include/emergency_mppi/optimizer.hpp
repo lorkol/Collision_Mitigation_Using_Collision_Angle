@@ -243,12 +243,6 @@ protected:
    */
   void setOffset(double controller_frequency);
 
-  /**
-   * @brief Perform fallback behavior to try to recover from a set of trajectories in collision
-   * @param fail Whether the system failed to recover from
-   */
-  bool fallback(bool fail);
-
 protected:
   rclcpp_lifecycle::LifecycleNode::WeakPtr parent_;
   std::shared_ptr<nav2_costmap_2d::Costmap2DROS> costmap_ros_;

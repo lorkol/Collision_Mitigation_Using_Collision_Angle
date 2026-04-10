@@ -172,9 +172,7 @@ geometry_msgs::msg::TwistStamped Optimizer::evalControl(
 {
   prepare(robot_pose, robot_speed, plan, goal, goal_checker);
 
-  do {
-    optimize();
-  } while (fallback(critics_data_.fail_flag));
+  optimize();
 
   utils::savitskyGolayFilter(control_sequence_, control_history_, settings_);
   auto control = getControlFromSequenceAsTwist(plan.header.stamp);
@@ -188,39 +186,39 @@ geometry_msgs::msg::TwistStamped Optimizer::evalControl(
 
 void Optimizer::evaluateInNormalMode()
 {
-      generateNoisedTrajectories();
-      critic_manager_.evalTrajectoriesScores(critics_data_);
+  generateNoisedTrajectories();
+  critic_manager_.evalTrajectoriesScores(critics_data_);
 }
 
 void Optimizer::evaluateInEmergencyMode()
 {
-      // Generate a max-deceleration braking ramp from current velocity
-      float vx_curr = state_.speed.linear.x;
-      float const decel_vx = settings_.constraints.ax_min * settings_.model_dt;
-      for (unsigned int t = 0; t < settings_.time_steps; ++t) {
-        if (vx_curr > 0.0f) {
-          vx_curr = std::max(0.0f, vx_curr + decel_vx);
-        } else if (vx_curr < 0.0f) {
-          vx_curr = std::min(0.0f, vx_curr - decel_vx);
-        }
-        control_sequence_.vx(t) = vx_curr;
-      }
-      control_sequence_.wz.fill(0.0);
-      if (isHolonomic()) {
-        float vy_curr = state_.speed.linear.y;
-        float decel_vy = settings_.constraints.ay_min * settings_.model_dt;
-        for (unsigned int t = 0; t < settings_.time_steps; ++t) {
-          if (vy_curr > 0.0f) {
-            vy_curr = std::max(0.0f, vy_curr + decel_vy);
-          } else if (vy_curr < 0.0f) {
-            vy_curr = std::min(0.0f, vy_curr - decel_vy);
-          }
-          control_sequence_.vy(t) = vy_curr;
-        }
-      }
-      generateNoisedTrajectories();
-      critic_manager_.evalTrajectoriesScores(critics_data_);
+  // Generate a max-deceleration braking ramp from current velocity
+  float vx_curr = state_.speed.linear.x;
+  float const decel_vx = settings_.constraints.ax_min * settings_.model_dt;
+  for (unsigned int t = 0; t < settings_.time_steps; ++t) {
+    if (vx_curr > 0.0f) {
+      vx_curr = std::max(0.0f, vx_curr + decel_vx);
+    } else if (vx_curr < 0.0f) {
+      vx_curr = std::min(0.0f, vx_curr - decel_vx);
     }
+    control_sequence_.vx(t) = vx_curr;
+  }
+  control_sequence_.wz.fill(0.0);
+  if (isHolonomic()) {
+    float vy_curr = state_.speed.linear.y;
+    float decel_vy = settings_.constraints.ay_min * settings_.model_dt;
+    for (unsigned int t = 0; t < settings_.time_steps; ++t) {
+      if (vy_curr > 0.0f) {
+        vy_curr = std::max(0.0f, vy_curr + decel_vy);
+      } else if (vy_curr < 0.0f) {
+        vy_curr = std::min(0.0f, vy_curr - decel_vy);
+      }
+      control_sequence_.vy(t) = vy_curr;
+    }
+  }
+  generateNoisedTrajectories();
+  critic_manager_.evalTrajectoriesScores(critics_data_);
+}
 
 void Optimizer::optimize()
 {
@@ -252,24 +250,6 @@ void Optimizer::optimize()
   }
 }
 
-bool Optimizer::fallback(bool fail)
-{
-  static size_t counter = 0;
-
-  if (!fail) {
-    counter = 0;
-    return false;
-  }
-
-  reset(false /*Don't reset zone-based speed limits after fallback*/);
-
-  if (++counter > settings_.retry_attempt_limit) {
-    counter = 0;
-    throw nav2_core::NoValidControl("Optimizer fail to compute path");
-  }
-
-  return true;
-}
 
 void Optimizer::prepare(
   const geometry_msgs::msg::PoseStamped & robot_pose,
