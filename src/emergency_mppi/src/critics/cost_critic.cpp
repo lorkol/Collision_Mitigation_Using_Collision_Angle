@@ -216,6 +216,10 @@ void CostCritic::score(CriticData & data)
   }
 
   data.fail_flag = all_trajectories_collide;
+  if (data.fail_flag) {
+    RCLCPP_WARN(
+      logger_, "Cost critic is setting fail_flag: all trajectories were in collision.");
+  }
 }
 
 }  // namespace emergency_mppi::critics
