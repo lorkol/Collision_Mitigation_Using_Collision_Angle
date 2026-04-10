@@ -285,6 +285,15 @@ def generate_launch_description():
         }]
     )
 
+    # Bridge for ground truth odometry from Gazebo
+    ground_truth_bridge_cmd = Node(
+        package='ros_gz_bridge',
+        executable='parameter_bridge',
+        name='ground_truth_bridge',
+        arguments=['/odom_ground_truth_gz@nav_msgs/msg/Odometry[gz.msgs.Odometry'],
+        remappings=[('/odom_ground_truth_gz', '/odom_ground_truth')],
+    )
+
     # Create the launch description and populate
     ld = LaunchDescription()
 
@@ -322,6 +331,7 @@ def generate_launch_description():
     ld.add_action(rviz_cmd)
     ld.add_action(bringup_cmd)
     ld.add_action(edt_publisher_cmd)
+    ld.add_action(ground_truth_bridge_cmd)
     ld.add_action(test_runner_node_cmd)
 
     return ld

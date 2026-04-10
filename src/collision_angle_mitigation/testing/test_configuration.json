@@ -1,7 +1,7 @@
 {
   "robot_initial_pose": { "x": -2.0, "y": -0.5, "z": 0.01, "roll": 0.0, "pitch": 0.0, "yaw": 0.0 },
   "goal_pose": { "x": 2.0, "y": 0.5, "yaw": 0.0 },
-  "obstacle_spawn_delay": 9.0,
+  "obstacle_spawn_delay": 10.0,
   "obstacle_to_spawn": {
     "name": "test_obstacle",
     "sdf_filename": "single_cylinder.sdf",

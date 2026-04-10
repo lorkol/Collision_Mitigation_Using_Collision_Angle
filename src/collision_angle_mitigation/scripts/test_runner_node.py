@@ -35,13 +35,15 @@ from rclpy.qos import (
     ReliabilityPolicy,
 )
 
-from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped
+from geometry_msgs.msg import PoseStamped, PoseWithCovarianceStamped, Twist
+from nav_msgs.msg import Odometry
 from lifecycle_msgs.srv import GetState
 from tf_transformations import quaternion_from_euler
 from ament_index_python.packages import get_package_share_directory
 
 
 _QOS_TRANSIENT_LOCAL = QoSProfile(
+    # For /amcl_pose
     depth=1,
     reliability=ReliabilityPolicy.RELIABLE,
     durability=DurabilityPolicy.TRANSIENT_LOCAL,
@@ -49,6 +51,7 @@ _QOS_TRANSIENT_LOCAL = QoSProfile(
 )
 
 _QOS_DEFAULT = QoSProfile(
+    # For /initialpose, /goal_pose, /odom
     depth=10,
     reliability=ReliabilityPolicy.RELIABLE,
     durability=DurabilityPolicy.VOLATILE,
@@ -62,6 +65,10 @@ class TestRunnerNode(Node):
         super().__init__('test_runner_node')
 
         self.declare_parameter('test_config_file', '')
+        # Declare momentum parameters before using them
+        self.declare_parameter('robot_mass', 1.0)
+        self.declare_parameter('collision_velocity_threshold', 0.1)
+
         config_path = self.get_parameter('test_config_file').value
 
         if not config_path:
@@ -84,6 +91,19 @@ class TestRunnerNode(Node):
         # Set by _amcl_callback when /amcl_pose is received
         self._amcl_event = threading.Event()
 
+        # --- State for momentum monitoring ---
+        self._monitor_active = False
+        self._collision_detected = False
+        self._last_velocity_x = 0.0
+        self._robot_mass = self.get_parameter('robot_mass').value
+        self._collision_threshold = self.get_parameter(
+            'collision_velocity_threshold'
+        ).value
+        self.get_logger().info(
+            f'Momentum monitor configured with mass={self._robot_mass:.2f} kg '
+            f'and collision threshold > {self._collision_threshold:.2f} m/s.'
+        )
+
         # Publishers
         self._initialpose_pub = self.create_publisher(
             PoseWithCovarianceStamped, '/initialpose', _QOS_DEFAULT
@@ -97,6 +117,12 @@ class TestRunnerNode(Node):
             self._amcl_callback,
             _QOS_TRANSIENT_LOCAL,
         )
+        self.create_subscription(
+            Odometry,
+            '/odom_ground_truth',  # Changed to ground truth from physics engine
+            self._odom_callback,
+            _QOS_DEFAULT,
+        )
 
         # Service client
         self._bt_nav_state_client = self.create_client(
@@ -107,6 +133,7 @@ class TestRunnerNode(Node):
             target=self._run_sequence_safe, daemon=True
         )
         self._sequence_thread.start()
+
         self.get_logger().info('TestRunnerNode initialized. Sequence thread started.')
 
     # =========================================================================
@@ -138,6 +165,10 @@ class TestRunnerNode(Node):
 
         # Step 3: Send the navigation goal — Nav2 handles everything from here
         self._send_goal()
+
+        # Activate momentum monitoring now that the robot is commanded to move
+        self.get_logger().info('Activating collision monitor.')
+        self._monitor_active = True
 
         # Step 4: Wait configured delay, then spawn obstacle
         delay = float(self._config.get('obstacle_spawn_delay', 1.0))
@@ -251,6 +282,40 @@ class TestRunnerNode(Node):
         self.get_logger().info(
             f'[Step 3] Goal sent: x={goal_cfg["x"]}, y={goal_cfg["y"]}, yaw={yaw:.3f} rad'
         )
+
+    # =========================================================================
+    # Momentum Monitoring
+    # =========================================================================
+
+    def _odom_callback(self, msg: Odometry):
+        """Monitors velocity to detect a collision."""
+        if not self._monitor_active or self._collision_detected:
+            return
+
+        # Extract linear velocity in the x-direction from the Odometry message
+        current_velocity_x = msg.twist.twist.linear.x
+
+        # A collision is detected if the robot was moving forward and suddenly stops.
+        # The check `self._last_velocity_x > self._collision_threshold` ensures we were
+        # actually moving, and `current_velocity_x < 0.01` indicates a sudden stop.
+        if self._last_velocity_x > self._collision_threshold and current_velocity_x < 0.01:
+            self._collision_detected = True
+            self._monitor_active = False  # Stop monitoring after first collision
+
+            v_before = self._last_velocity_x
+            v_after = current_velocity_x
+            delta_v = v_after - v_before
+            delta_p = self._robot_mass * delta_v
+
+            self.get_logger().info('=' * 40)
+            self.get_logger().info('COLLISION DETECTED!')
+            self.get_logger().info(f'  Velocity Before: {v_before:.4f} m/s')
+            self.get_logger().info(f'  Velocity After:  {v_after:.4f} m/s')
+            self.get_logger().info(f'  Robot Mass:      {self._robot_mass:.2f} kg')
+            self.get_logger().info(f'  Change in Momentum (Δp): {delta_p:.4f} kg*m/s')
+            self.get_logger().info('=' * 40)
+
+        self._last_velocity_x = current_velocity_x
 
     # =========================================================================
     # Step 4 — Spawn obstacle
