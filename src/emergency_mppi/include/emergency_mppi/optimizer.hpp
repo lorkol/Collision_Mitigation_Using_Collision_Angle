@@ -125,6 +125,16 @@ public:
 
 protected:
   /**
+   * @brief Evaluate trajectories in normal operation and check for emergency transition
+   */
+  void evaluateInNormalMode();
+
+  /**
+   * @brief Evaluate trajectories in emergency mode (e.g. braking)
+   */
+  void evaluateInEmergencyMode();
+
+  /**
    * @brief Main function to generate, score, and return trajectories
    */
   void optimize();
@@ -232,12 +242,6 @@ protected:
    * offset should be used to populate initial state of the next cycle
    */
   void setOffset(double controller_frequency);
-
-  /**
-   * @brief Perform fallback behavior to try to recover from a set of trajectories in collision
-   * @param fail Whether the system failed to recover from
-   */
-  bool fallback(bool fail);
 
 protected:
   rclcpp_lifecycle::LifecycleNode::WeakPtr parent_;

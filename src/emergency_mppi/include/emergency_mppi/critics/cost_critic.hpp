@@ -68,13 +68,8 @@ protected:
           costmap_ros_->getRobotFootprint()));
     }
 
-    switch (static_cast<unsigned char>(score_cost)) {
-      case (nav2_costmap_2d::LETHAL_OBSTACLE):
-        return true;
-      case (nav2_costmap_2d::INSCRIBED_INFLATED_OBSTACLE):
-        return consider_footprint_ ? false : true;
-      case (nav2_costmap_2d::NO_INFORMATION):
-        return is_tracking_unknown_ ? false : true;
+    if (score_cost >= nav2_costmap_2d::LETHAL_OBSTACLE) {
+      return true;
     }
 
     return false;

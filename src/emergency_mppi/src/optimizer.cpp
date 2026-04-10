@@ -172,9 +172,7 @@ geometry_msgs::msg::TwistStamped Optimizer::evalControl(
 {
   prepare(robot_pose, robot_speed, plan, goal, goal_checker);
 
-  do {
-    optimize();
-  } while (fallback(critics_data_.fail_flag));
+  optimize();
 
   utils::savitskyGolayFilter(control_sequence_, control_history_, settings_);
   auto control = getControlFromSequenceAsTwist(plan.header.stamp);
@@ -186,75 +184,72 @@ geometry_msgs::msg::TwistStamped Optimizer::evalControl(
   return control;
 }
 
+void Optimizer::evaluateInNormalMode()
+{
+  generateNoisedTrajectories();
+  critic_manager_.evalTrajectoriesScores(critics_data_);
+}
+
+void Optimizer::evaluateInEmergencyMode()
+{
+  // Generate a max-deceleration braking ramp from current velocity
+  float vx_curr = state_.speed.linear.x;
+  float const decel_vx = settings_.constraints.ax_min * settings_.model_dt;
+  for (unsigned int t = 0; t < settings_.time_steps; ++t) {
+    if (vx_curr > 0.0f) {
+      vx_curr = std::max(0.0f, vx_curr + decel_vx);
+    } else if (vx_curr < 0.0f) {
+      vx_curr = std::min(0.0f, vx_curr - decel_vx);
+    }
+    control_sequence_.vx(t) = vx_curr;
+  }
+  control_sequence_.wz.fill(0.0);
+  if (isHolonomic()) {
+    float vy_curr = state_.speed.linear.y;
+    float decel_vy = settings_.constraints.ay_min * settings_.model_dt;
+    for (unsigned int t = 0; t < settings_.time_steps; ++t) {
+      if (vy_curr > 0.0f) {
+        vy_curr = std::max(0.0f, vy_curr + decel_vy);
+      } else if (vy_curr < 0.0f) {
+        vy_curr = std::min(0.0f, vy_curr - decel_vy);
+      }
+      control_sequence_.vy(t) = vy_curr;
+    }
+  }
+  generateNoisedTrajectories();
+  critic_manager_.evalTrajectoriesScores(critics_data_);
+}
+
 void Optimizer::optimize()
 {
   for (size_t i = 0; i < settings_.iteration_count; ++i) {
-    // 1. Normal Mode Evaluation
-    if(!critic_manager_.getEmergencyMode()) {
-      generateNoisedTrajectories();
-      critic_manager_.evalTrajectoriesScores(critics_data_);
+    // Start of the optimization cycle, not in emergency mode yet.
+    if (!critic_manager_.getEmergencyMode()) {
+      evaluateInNormalMode();
 
-      float min_cost = xt::amin(costs_)();
-
-      // 2. Check for Total Collision
-      // If the best trajectory cost is extremely high, we assume all valid paths are blocked.
-      if (min_cost >= emergency_collision_cost_) {
-        RCLCPP_WARN(logger_, "MPPI: Entering EMERGENCY MODE! All trajectory costs >= threshold (%f >= %f)", min_cost, emergency_collision_cost_);
+      // The only trigger for emergency mode is the fail_flag, which is only set
+      // by a critic when an inevitable lethal collision is detected.
+      if (critics_data_.fail_flag) {
+        RCLCPP_WARN(
+          logger_,
+          "Inevitable collision detected, transitioning to damage-minimizing emergency mode!");
         critic_manager_.setEmergencyMode(true);
       }
     }
-    //Run this if it was true from the start OR if it just became true from the normal mode evaluation
-    if(critic_manager_.getEmergencyMode()){
-      // Generate a max-deceleration braking ramp from current velocity
-      float vx_curr = state_.speed.linear.x;
-      float const decel_vx = settings_.constraints.ax_min * settings_.model_dt;
-      for (unsigned int t = 0; t < settings_.time_steps; ++t) {
-        if (vx_curr > 0.0f) {
-          vx_curr = std::max(0.0f, vx_curr + decel_vx);
-        } else if (vx_curr < 0.0f) {
-          vx_curr = std::min(0.0f, vx_curr - decel_vx);
-        }
-        control_sequence_.vx(t) = vx_curr;
-      }
-      control_sequence_.wz.fill(0.0);
-      if (isHolonomic()) {
-        float vy_curr = state_.speed.linear.y;
-        float decel_vy = settings_.constraints.ay_min * settings_.model_dt;
-        for (unsigned int t = 0; t < settings_.time_steps; ++t) {
-          if (vy_curr > 0.0f) {
-            vy_curr = std::max(0.0f, vy_curr + decel_vy);
-          } else if (vy_curr < 0.0f) {
-            vy_curr = std::min(0.0f, vy_curr - decel_vy);
-          }
-          control_sequence_.vy(t) = vy_curr;
-        }
-      }
-      generateNoisedTrajectories();
-      critic_manager_.evalTrajectoriesScores(critics_data_);
-    }
 
+    // If normal mode evaluation triggered emergency mode, or if we were already
+    // in emergency mode, run the emergency evaluation.
+    if (critic_manager_.getEmergencyMode()) {
+      // Reset flag and costs to give emergency critics a clean slate to find
+      // the best possible "damage-minimizing" trajectory.
+      critics_data_.fail_flag = false;
+      costs_.fill(0.0f);
+      evaluateInEmergencyMode();
+    }
     updateControlSequence();
   }
 }
 
-bool Optimizer::fallback(bool fail)
-{
-  static size_t counter = 0;
-
-  if (!fail) {
-    counter = 0;
-    return false;
-  }
-
-  reset(false /*Don't reset zone-based speed limits after fallback*/);
-
-  if (++counter > settings_.retry_attempt_limit) {
-    counter = 0;
-    throw nav2_core::NoValidControl("Optimizer fail to compute path");
-  }
-
-  return true;
-}
 
 void Optimizer::prepare(
   const geometry_msgs::msg::PoseStamped & robot_pose,

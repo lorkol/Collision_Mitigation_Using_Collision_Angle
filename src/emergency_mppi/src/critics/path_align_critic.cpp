@@ -60,14 +60,7 @@ void PathAlignCritic::score(CriticData & data)
 
   // Don't apply when dynamic obstacles are blocking significant proportions of the local path
   utils::setPathCostsIfNotSet(data, costmap_ros_);
-  std::vector<bool> & path_pts_valid = *data.path_pts_valid;
-  float invalid_ctr = 0.0f;
-  for (size_t i = 0; i < path_segments_count; i++) {
-    if (!path_pts_valid[i]) {invalid_ctr += 1.0f;}
-    if (invalid_ctr / path_segments_flt > max_path_occupancy_ratio_ && invalid_ctr > 2.0f) {
-      return;
-    }
-  }
+  const std::vector<bool> & path_pts_valid = *data.path_pts_valid;
 
   const size_t batch_size = data.trajectories.x.shape(0);
   auto && cost = xt::xtensor<float, 1>::from_shape({data.costs.shape(0)});
