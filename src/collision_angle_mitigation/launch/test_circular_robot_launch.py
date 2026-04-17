@@ -100,7 +100,7 @@ def generate_launch_description():
 
     declare_map_yaml_cmd = DeclareLaunchArgument(
         'map',
-        default_value=os.path.join(bringup_dir, 'maps', 'tb3_sandbox.yaml'),
+        default_value=os.path.join(bringup_dir, 'maps', 'hallway.yaml'),
     )
 
     declare_use_sim_time_cmd = DeclareLaunchArgument(
@@ -161,7 +161,7 @@ def generate_launch_description():
 
     declare_world_cmd = DeclareLaunchArgument(
         'world',
-        default_value=os.path.join(sim_dir, 'worlds', 'tb3_sandbox.sdf.xacro'),
+        default_value=os.path.join(sim_dir, 'worlds', 'hallway.sdf.xacro'),
         description='Full path to world model file to load',
     )
 
