@@ -188,6 +188,7 @@ controller_server:
         cost_power: 1
         cost_weight: 3.0
         robot_radius: 0.17
+        emergency_wz_std: 1.5
 
       # TwirlingCritic:
       #   enabled: true

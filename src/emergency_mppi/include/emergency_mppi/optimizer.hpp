@@ -281,6 +281,8 @@ protected:
 
   float emergency_collision_cost_;
   bool prev_was_in_emergency_{false};
+  float emergency_wz_std_{1.5f};
+  bool emergency_wz_std_applied_{false};
 };
 
 }  // namespace emergency_mppi

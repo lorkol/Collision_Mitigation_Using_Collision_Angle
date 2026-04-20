@@ -89,6 +89,11 @@ void Optimizer::getParams()
   getParam(s.retry_attempt_limit, "retry_attempt_limit", 1);
   getParam(emergency_collision_cost_, "collision_cost", 100000.0f);
 
+  // Read emergency_wz_std from CollisionAngleCritic's namespace so it lives
+  // alongside the other critic parameters in the YAML.
+  auto getCollisionAngleParam = parameters_handler_->getParamGetter(name_ + ".CollisionAngleCritic");
+  getCollisionAngleParam(emergency_wz_std_, "emergency_wz_std", 1.5f);
+
   s.base_constraints.ax_max = std::abs(s.base_constraints.ax_max);
   if (s.base_constraints.ax_min > 0.0) {
     s.base_constraints.ax_min = -1.0 * s.base_constraints.ax_min;
@@ -152,6 +157,7 @@ void Optimizer::reset(bool reset_dynamic_speed_limits)
   costs_ = xt::zeros<float>({settings_.batch_size});
   generated_trajectories_.reset(settings_.batch_size, settings_.time_steps);
 
+  emergency_wz_std_applied_ = false;
   noise_generator_.reset(settings_, isHolonomic());
   motion_model_->initialize(settings_.constraints, settings_.model_dt);
   critic_manager_.setEmergencyMode(false);
@@ -215,6 +221,14 @@ void Optimizer::evaluateInNormalMode()
 
 void Optimizer::evaluateInEmergencyMode()
 {
+  // On first emergency cycle: boost wz sampling std so trajectories explore
+  // large rotations (needed to find a good glancing angle).
+  if (!emergency_wz_std_applied_) {
+    settings_.sampling_std.wz = emergency_wz_std_;
+    noise_generator_.reset(settings_, isHolonomic());
+    emergency_wz_std_applied_ = true;
+  }
+
   // Generate a max-deceleration braking ramp from current velocity
   float vx_curr = state_.speed.linear.x;
   float const decel_vx = settings_.constraints.ax_min * settings_.model_dt;
