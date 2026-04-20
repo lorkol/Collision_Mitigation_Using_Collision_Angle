@@ -240,7 +240,9 @@ void Optimizer::evaluateInEmergencyMode()
     }
     control_sequence_.vx(t) = vx_curr;
   }
-  control_sequence_.wz.fill(0.0);
+  // TODO: THIS IS A BIG CHANGE
+  // wz is NOT reset — MPPI carries forward the learned turning direction from the previous cycle.
+  // Only vx is forced to a braking ramp; wz is the degree of freedom CollisionAngleCritic optimizes.
   if (isHolonomic()) {
     float vy_curr = state_.speed.linear.y;
     float decel_vy = settings_.constraints.ay_min * settings_.model_dt;
