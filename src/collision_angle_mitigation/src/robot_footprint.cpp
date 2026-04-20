@@ -43,8 +43,8 @@ void CircularFootprint::getIndices(
         // Start at 90 degrees (Top of circle relative to grid)
         double theta = M_PI_2 + (2.0 * M_PI * i / n_steps);
         
-        int x = static_cast<int>(std::floor(rx_grid + r_cells * std::cos(theta)));
-        int y = static_cast<int>(std::floor(ry_grid + r_cells * std::sin(theta)));
+        int x = static_cast<int>(std::round(rx_grid + r_cells * std::cos(theta)));
+        int y = static_cast<int>(std::round(ry_grid + r_cells * std::sin(theta)));
 
         // Check bounds
         if (x >= 0 && x < width && y >= 0 && y < height) {
@@ -56,8 +56,8 @@ void CircularFootprint::getIndices(
     }
 
     // Remove the last point if it's a duplicate of the first (loop closure)
-    if (out_indices.size() > 1 && 
-        out_indices.back().x == out_indices.front().x && 
+    if (out_indices.size() > 1 &&
+        out_indices.back().x == out_indices.front().x &&
         out_indices.back().y == out_indices.front().y) {
         out_indices.pop_back();
     }
@@ -99,8 +99,8 @@ void CircularFootprint::getIndices(
         // Start at 90 degrees (Top of circle relative to grid)
         double theta = M_PI_2 + (2.0 * M_PI * i / n_steps);
         
-        int x = static_cast<int>(std::floor(rx_grid + r_cells * std::cos(theta)));
-        int y = static_cast<int>(std::floor(ry_grid + r_cells * std::sin(theta)));
+        int x = static_cast<int>(std::round(rx_grid + r_cells * std::cos(theta)));
+        int y = static_cast<int>(std::round(ry_grid + r_cells * std::sin(theta)));
 
         // Check bounds
         if (x >= 0 && x < width && y >= 0 && y < height) {
@@ -112,8 +112,8 @@ void CircularFootprint::getIndices(
     }
 
     // Remove the last point if it's a duplicate of the first (loop closure)
-    if (out_indices.size() > 1 && 
-        out_indices.back().x == out_indices.front().x && 
+    if (out_indices.size() > 1 &&
+        out_indices.back().x == out_indices.front().x &&
         out_indices.back().y == out_indices.front().y) {
         out_indices.pop_back();
     }
