@@ -174,8 +174,17 @@ geometry_msgs::msg::TwistStamped Optimizer::evalControl(
   prepare(robot_pose, robot_speed, plan, goal, goal_checker);
 
   const bool was_in_emergency = critic_manager_.getEmergencyMode();
+
+  if (prev_was_in_emergency_ && !was_in_emergency) {
+    RCLCPP_ERROR(
+      logger_,
+      "[MPPI] BUG: Emergency mode was cleared unexpectedly between control cycles. "
+      "This should not happen — emergency mode is latched. Check reset() logs.");
+  }
+
   optimize();
   const bool is_in_emergency = critic_manager_.getEmergencyMode();
+  prev_was_in_emergency_ = is_in_emergency;
 
   if (!was_in_emergency && is_in_emergency) {
     RCLCPP_WARN(

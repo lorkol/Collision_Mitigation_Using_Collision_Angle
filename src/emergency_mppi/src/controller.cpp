@@ -77,6 +77,10 @@ void MPPIController::deactivate()
 
 void MPPIController::reset()
 {
+  RCLCPP_WARN(
+    logger_,
+    "[MPPI] MPPIController::reset() called by Nav2 (ControllerServer). "
+    "This clears emergency mode if active. Cause: new navigation goal or plan replanning.");
   optimizer_.reset(false /*Don't reset zone-based speed limits between requests*/);
 }
 

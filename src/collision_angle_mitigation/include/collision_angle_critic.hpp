@@ -47,7 +47,7 @@ public:
   float getMinVelConstraint() {return min_vel_;}
 
 protected:
-  unsigned int power_{0};
+  unsigned int power_{1};
   float weight_{0};
   float min_vel_;
   float max_vel_;

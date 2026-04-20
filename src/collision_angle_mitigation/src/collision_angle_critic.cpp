@@ -19,6 +19,8 @@
 #include "angles/angles.h"
 #include <omp.h>
 #include <cstring>
+#include <atomic>
+#include <limits>
 
 namespace emergency_mppi::critics
 {
@@ -95,6 +97,13 @@ void CollisionAngleCritic::score(CriticData & data)
   const size_t batch_size = data.trajectories.x.shape(0);
   const size_t time_steps = data.trajectories.x.shape(1);
 
+  std::atomic<int> grad_hit_count{0};
+  std::atomic<int> penalized_count{0};
+  std::atomic<float> total_cost_added{0.0f};
+  std::atomic<float> min_traj_cost{std::numeric_limits<float>::max()};
+  std::atomic<float> max_traj_cost{0.0f};
+  std::atomic<int> t0_breaks{0};  // how many trajectories break at t=0
+
   #pragma omp parallel for
   for (int i = 0; i < static_cast<int>(batch_size); ++i) {
     float trajectory_cost = 0.0f;
@@ -149,6 +158,7 @@ void CollisionAngleCritic::score(CriticData & data)
         // If flag == 2, we skip (has_grad remains false)
 
         if (has_grad) {
+            grad_hit_count.fetch_add(1, std::memory_order_relaxed);
 
             // Calculate velocity vector from state (Robot Frame)
             double vx = data.state.vx(i, t);
@@ -175,13 +185,31 @@ void CollisionAngleCritic::score(CriticData & data)
             // TODO : Change the actual cost function to work with the nav2 costs given according to collision etc
             if (alignment < 0.0) {
               trajectory_cost += weight_ * std::pow(-dot_product, power_) * data.model_dt;
+              penalized_count.fetch_add(1, std::memory_order_relaxed);
             }
+            if (t == 0) { t0_breaks.fetch_add(1, std::memory_order_relaxed); }
             t = time_steps; // Break inner loop if we are within the threshold to save computation on this trajectory.
         }
       }
     }
     data.costs[i] += trajectory_cost;
+    float prev = total_cost_added.load(std::memory_order_relaxed);
+    while (!total_cost_added.compare_exchange_weak(prev, prev + trajectory_cost,
+      std::memory_order_relaxed)) {}
+    float mn = min_traj_cost.load(std::memory_order_relaxed);
+    while (trajectory_cost < mn &&
+      !min_traj_cost.compare_exchange_weak(mn, trajectory_cost, std::memory_order_relaxed)) {}
+    float mx = max_traj_cost.load(std::memory_order_relaxed);
+    while (trajectory_cost > mx &&
+      !max_traj_cost.compare_exchange_weak(mx, trajectory_cost, std::memory_order_relaxed)) {}
   }
+
+  fprintf(stderr,
+    "[CollisionAngleCritic] grad_hits=%d penalized=%d t0_breaks=%d traj_cost min=%.4f max=%.4f total=%.2f\n",
+    grad_hit_count.load(), penalized_count.load(), t0_breaks.load(),
+    min_traj_cost.load(), max_traj_cost.load(), total_cost_added.load());
+  fflush(stderr);
+
 }
 
 }  // namespace emergency_mppi::critics

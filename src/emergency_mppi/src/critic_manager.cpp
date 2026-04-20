@@ -100,10 +100,10 @@ void CriticManager::evalTrajectoriesScores(
     }
     critic->score(data);
 
-    if (data.fail_flag) { 
-      RCLCPP_DEBUG( 
-        logger_, "Critic '%s' triggered a failure flag.", active_critic_names[i].c_str()); 
-    } 
+    if (data.fail_flag) {
+      RCLCPP_DEBUG(
+        logger_, "Critic '%s' triggered a failure flag.", active_critic_names[i].c_str());
+    }
   }
 }
 

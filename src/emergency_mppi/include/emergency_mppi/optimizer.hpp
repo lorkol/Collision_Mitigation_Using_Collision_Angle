@@ -280,6 +280,7 @@ protected:
   rclcpp::Clock::SharedPtr clock_;
 
   float emergency_collision_cost_;
+  bool prev_was_in_emergency_{false};
 };
 
 }  // namespace emergency_mppi
